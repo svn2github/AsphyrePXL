@@ -1,4 +1,4 @@
-           Pascal eXtended Library v1.0.1, dated 15-Feb-2016.
+          Platform eXtended Library v1.0.1, dated 15-Feb-2016.
              Copyright (c) 2000 - 2016  Yuriy Kotsarenko
                    http://asphyre.sourceforge.net
                    http://www.asphyre.net
