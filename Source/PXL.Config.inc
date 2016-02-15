@@ -10,7 +10,6 @@
   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
   See the GNU General Public License for more details.
 }
-
 { Indicates that this config file has been processed (to avoid redeclaring or redefining of parameters in other
   configuration files). }
 {$DEFINE PXL_CONFIG}
@@ -59,15 +58,19 @@
     {$DEFINE CPUX64}
     {$DEFINE PUREPASCAL}
   {$ENDIF}
-  
-  {$IFDEF MSDOS}
-    {$DEFINE PXL_COMPACT}
-  {$ENDIF}
 
   {$IF DEFINED(CPUARM) AND DEFINED(FPC_ABI_EABI)}
     {$DEFINE FPC_MMAP2}
   {$ELSE}
     {$DEFINE FPC_OLDMMAP}
+  {$ENDIF}
+
+  {$IFDEF EMBEDDED}
+    {$DEFINE SINGLEBOARD}
+    {$ALIGN 2}
+    {$IFNDEF ARM}
+      {$DEFINE AVR}
+    {$ENDIF}
   {$ENDIF}
 
 {$ELSE}

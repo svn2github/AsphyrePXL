@@ -320,14 +320,14 @@ begin
   glGetIntegerv(GL_SCISSOR_BOX, @ScissorValues[0]);
 
   Result.Left := ScissorValues[0];
-  Result.Top := Round(FViewNormSize.Y * 2) - ScissorValues[1];
+  Result.Top := Round(FViewNormSize.Y * 2) - (ScissorValues[1] + ScissorValues[3]);
   Result.Right := Result.Left + ScissorValues[2];
   Result.Bottom := Result.Top + ScissorValues[3];
 end;
 
 procedure TGLCanvas.SetClipRect(const Value: TIntRect);
 begin
-  glScissor(Value.Left, Round(FViewNormSize.Y * 2) - Value.Top, Value.Width, Value.Height);
+  glScissor(Value.Left, Round(FViewNormSize.Y * 2) - Value.Bottom, Value.Width, Value.Height);
 end;
 
 procedure TGLCanvas.ResetStates;
@@ -669,6 +669,7 @@ end;
 procedure TGLCanvas.Flush;
 begin
   ResetScene;
+  UpdateTexture(nil);
 end;
 
 procedure TGLCanvas.Reset;

@@ -18,12 +18,6 @@ interface
 {$INCLUDE PXL.Config.inc}
 
 type
-  { Pointer to @link(SizeInt). }
-  PSizeInt = ^SizeInt;
-
-  { Pointer to @link(SizeUInt). }
-  PSizeUInt = ^SizeUInt;
-
 {$IFNDEF FPC}
   {$IFDEF DELPHI_XE2_UP}
     { Pointer type represented as a signed integer. }
@@ -37,11 +31,19 @@ type
   {$ENDIF}
 {$ENDIF}
 
+{$IFNDEF FPC}
+  { Pointer to @link(SizeInt). }
+  PSizeInt = ^SizeInt;
+
   { Signed integer data type having the same size as pointer on the given platform. }
   SizeInt = PtrInt;
 
+  { Pointer to @link(SizeUInt). }
+  PSizeUInt = ^SizeUInt;
+
   { Unsigned integer data type having the same size as pointer on the given platform. }
   SizeUInt = PtrUInt;
+{$ENDIF}
 
   { Pointer to @link(VectorFloat). }
   PVectorFloat = ^VectorFloat;
@@ -122,7 +124,20 @@ type
   { General-purpose string type that is best optimized for standard usage such as file names, paths, XML tags and
     attributes and so on. It may also contain Unicode-encoded text, either UTF-8 or UTF-16 depending on platform and
     compiler. }
-  StdString = {$IFDEF FPC} {$IFDEF MSDOS} ShortString {$ELSE} UTF8String {$ENDIF} {$ELSE} string {$ENDIF};
+  StdString =
+  {$IFDEF FPC}
+    {$IFDEF MSDOS}
+      ShortString
+    {$ELSE}
+      {$IFDEF EMBEDDED}
+        RawByteString
+      {$ELSE}
+        UTF8String
+      {$ENDIF}
+    {$ENDIF}
+  {$ELSE}
+    string
+  {$ENDIF};
 
   { Pointer to @link(StdChar). }
   PStdChar = {$IFDEF DELPHI} PChar {$ELSE} ^StdChar {$ENDIF};
@@ -181,7 +196,7 @@ type
 
 const
   { A special value that determines precision limit when comparing vectors and coordinates. }
-  VectorEpsilon: VectorFloat {$IFNDEF PASDOC} = 0.00001{$ENDIF};
+  VectorEpsilon: VectorFloat {$IFNDEF PASDOC} = 0.00001 {$ENDIF};
 
 var
   { A special global variable that holds number of un-released PXL class instances and is meant for debugging purposes,
@@ -191,40 +206,50 @@ var
 { Checks whether the Value is @nil and if not, calls FreeMem on that value and then assigns @nil to it. }
 procedure FreeMemAndNil(var Value);
 
+{$IFNDEF EMBEDDED}
 { Saves the current FPU state to stack and increments internal stack pointer. The stack has length of 16. If the stack
   becomes full, this function does nothing. }
 procedure PushFPUState;
+{$ENDIF}
 
+{$IFNDEF EMBEDDED}
 { Similarly to @link(PushFPUState), this saves the current FPU state to stack and increments internal stack pointer.
   Afterwards, this function disables all FPU exceptions. This is typically used with Direct3D rendering methods that
   require FPU exceptions to be disabled. }
 procedure PushClearFPUState;
+{$ENDIF}
 
+{$IFNDEF EMBEDDED}
 { Recovers FPU state from the stack previously saved by @link(PushFPUState) or @link(PushClearFPUState) and decrements
   internal stack pointer. If there are no items on the stack, this function does nothing. }
 procedure PopFPUState;
+{$ENDIF}
 
 { Increments the current number of PXL class instances in a thread-safe fashion. On small single-board devices such
   as Intel Galileo or Raspberry PI, this method is not thread-safe. }
-procedure Increment_PXL_ClassInstances;
+procedure Increment_PXL_ClassInstances; inline;
 
 { Decrements the current number of PXL class instances in a thread-safe fashion. On small single-board devices such
   as Intel Galileo or Raspberry PI, this method is not thread-safe. }
-procedure Decrement_PXL_ClassInstances;
+procedure Decrement_PXL_ClassInstances; inline;
 
 implementation
 
+{$IFNDEF EMBEDDED}
 uses
-{$IFNDEF FPC}
-  System.SyncObjs,
-{$ENDIF}
+  {$IFNDEF FPC}
+    System.SyncObjs,
+  {$ENDIF}
 
   Math;
+{$ENDIF}
 
+{$IFNDEF EMBEDDED}
 const
   FPUStateStackLength = 16;
+{$ENDIF}
 
-{$IFNDEF DELPHI_XE2_UP}
+{$IF NOT DEFINED(EMBEDDED) AND NOT DEFINED(DELPHI_XE2_UP)}
 type
   TArithmeticExceptionMask = TFPUExceptionMask;
 
@@ -232,9 +257,11 @@ const
   exAllArithmeticExceptions = [exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision];
 {$ENDIF}
 
+{$IFNDEF EMBEDDED}
 var
   FPUStateStack: array[0..FPUStateStackLength - 1] of TArithmeticExceptionMask;
   FPUStackAt: Integer = 0;
+{$ENDIF}
 
 procedure FreeMemAndNil(var Value);
 var
@@ -248,6 +275,7 @@ begin
   end;
 end;
 
+{$IFNDEF EMBEDDED}
 procedure PushFPUState;
 begin
   if FPUStackAt >= FPUStateStackLength then
@@ -256,13 +284,17 @@ begin
   FPUStateStack[FPUStackAt] := GetExceptionMask;
   Inc(FPUStackAt);
 end;
+{$ENDIF}
 
+{$IFNDEF EMBEDDED}
 procedure PushClearFPUState;
 begin
   PushFPUState;
   SetExceptionMask(exAllArithmeticExceptions);
 end;
+{$ENDIF}
 
+{$IFNDEF EMBEDDED}
 procedure PopFPUState;
 begin
   if FPUStackAt <= 0 then
@@ -273,10 +305,11 @@ begin
   SetExceptionMask(FPUStateStack[FPUStackAt]);
   FPUStateStack[FPUStackAt] := [];
 end;
+{$ENDIF}
 
 procedure Increment_PXL_ClassInstances;
 begin
-{$IFDEF SINGLEBOARD}
+{$IF DEFINED(SINGLEBOARD) OR DEFINED(EMBEDDED)}
   Inc(PXL_ClassInstances);
 {$ELSE}
   {$IFDEF FPC}
@@ -289,7 +322,7 @@ end;
 
 procedure Decrement_PXL_ClassInstances;
 begin
-{$IFDEF SINGLEBOARD}
+{$IF DEFINED(SINGLEBOARD) OR DEFINED(EMBEDDED)}
   Dec(PXL_ClassInstances);
 {$ELSE}
   {$IFDEF FPC}

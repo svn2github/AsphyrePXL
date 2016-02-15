@@ -1244,8 +1244,8 @@ begin
         IntGrayToColor(
           FloatToIntGrayAlpha(
             ExtractGrayAlpha(
-              PixelToGrayFloat(PixelXTo32(SourceBlackPixel, SourceWhite.PixelFormat)),
-              PixelToGrayFloat(PixelXTo32(SourceWhitePixel, SourceBlack.PixelFormat)), 0.0, 1.0))),
+              PixelToGrayFloat(PixelXTo32(SourceBlackPixel, SourceBlack.PixelFormat)),
+              PixelToGrayFloat(PixelXTo32(SourceWhitePixel, SourceWhite.PixelFormat)), 0.0, 1.0))),
         DestPixel, FPixelFormat);
 
       Inc(PtrUInt(SourceWhitePixel), SourceWhite.BytesPerPixel);

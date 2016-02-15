@@ -142,6 +142,10 @@ type
       to alpha channel. @br @br }
     A2R10G10B10,
 
+    { 32-bit RGB pixel format with 10 bits used for each component of red, green and blue, with the remaining 2 bits
+      unused (and/or undefined). @br @br }
+    X2R10G10B10,
+
     { 32-bit BGRA pixel format. This is similar to @italic(A8R8G8B8) format but with red and blue components
       exchanged. @br @br }
     A8B8G8R8,
@@ -199,6 +203,56 @@ type
 
   { Standard notification event used throughout the framework. }
   TStandardNotifyEvent = procedure(const Sender: TObject) of object;
+
+{$ENDREGION}
+{$REGION 'TRandomContext'}
+
+type
+  PRandomContext = ^TRandomContext;
+
+  { State-sensitive pseudo-random number generator (PRNG). }
+  TRandomContext = record
+  private
+    function GetGaussRaw: VectorFloat;
+  public
+    { @exclude } Value1: Cardinal;
+    { @exclude } Value2: Cardinal;
+    { @exclude } Value3: Cardinal;
+    { @exclude } Value4: Cardinal;
+
+    { Creates random number generation context with all members set to zero. }
+    class function Create: TRandomContext; overload; static;
+
+    { Creates random number generation context with initial seed value. Using same seed values for different contexts
+      guarantees that the series of generated numbers will be the same. }
+    class function Create(const Seed: Cardinal; const ShuffleCount: Integer = 8): TRandomContext; overload; static;
+
+    { @exclude } class operator Equal(const Context1, Context2: TRandomContext): Boolean;
+    { @exclude } class operator NotEqual(const Context1, Context2: TRandomContext): Boolean;
+
+    { Generates next random number in the sequence from the specified Context.
+      This uses algorithm "A small noncryptographic PRNG" by Bob Jenkins:
+        http://burtleburtle.net/bob/rand/smallprng.html }
+    function GetValueRaw: Cardinal;
+
+    { Generates random value in range [0..1) using relatively linear distribution. }
+    function GetValue: VectorFloat; overload;
+
+    { Generates random value in range [0..Range] using relatively linear distribution. }
+    function GetValue(const Range: Cardinal): Cardinal; overload;
+
+    { Calculates random number in [0, 1] range using gaussian distribution with higher probability located near 0. }
+    function GetGaussStart: VectorFloat;
+
+    { Calculates random number in [0, 1] range using gaussian distribution with higher probability located near 1. }
+    function GetGaussEnd: VectorFloat;
+
+    { Calculates random number in [0, 1] range using gaussian distribution with higher probability located near 0.5.}
+    function GetGaussMiddle: VectorFloat;
+
+    { Calculates random number in [-1..1] range using gaussian distribution with higher probability located near 0. }
+    function GetGaussOmni: VectorFloat;
+  end;
 
 {$ENDREGION}
 {$REGION 'TIntGrayAlpha'}
@@ -517,6 +571,10 @@ function CatmullRomPixels(const Color1, Color2, Color3, Color4: TIntColor; const
 { Returns grayscale value in range of [0..255] from the given 32-bit RGBA color value. The resulting value can be
   considered the color's @italic(luma). The alpha-channel is ignored. }
 function PixelToGray(const Color: TIntColor): Integer;
+
+{ Returns grayscale value in range of [0..65535] from the given 32-bit RGBA color value. The resulting value can be
+  considered the color's @italic(luma). The alpha-channel is ignored. }
+function PixelToGray16(const Color: TIntColor): Integer;
 
 { Returns grayscale value in range of [0..1] from the given 32-bit RGBA color value. The resulting value can be
   considered the color's @italic(luma). The alpha-channel is ignored. }
@@ -1227,7 +1285,7 @@ type
   { 3x3 transformation matrix. }
   TMatrix3 = record
     { Individual matrix values. }
-    Data: array[0..2, 0..2] of VectorFLoat;
+    Data: array[0..2, 0..2] of VectorFloat;
 
     { @exclude } class operator Add(const Matrix1, Matrix2: TMatrix3): TMatrix3;
     { @exclude } class operator Subtract(const Matrix1, Matrix2: TMatrix3): TMatrix3;
@@ -1885,12 +1943,32 @@ function ClipCoords(const SourceSize, DestSize: TPoint2px; var SourceRect: TIntR
 function ClipCoords(const SourceSize, DestSize: TPoint2; var SourceRect, DestRect: TFloatRect): Boolean; overload;
 
 {$ENDREGION}
+{$REGION 'Embedded declarations'}
+
+{$IFDEF EMBEDDED}
+  {$DEFINE INTERFACE}
+  {$INCLUDE 'PXL.Types.inc'}
+  {$UNDEF INTERFACE}
+{$ENDIF}
+
+{$ENDREGION}
 
 implementation
 
+{$IFNDEF EMBEDDED}
 uses
   Math;
+{$ENDIF}
 
+{$REGION 'Embedded declarations'}
+
+{$IFDEF EMBEDDED}
+  {$DEFINE IMPLEMENTATION}
+  {$INCLUDE 'PXL.Types.inc'}
+  {$UNDEF IMPLEMENTATION}
+{$ENDIF}
+
+{$ENDREGION}
 {$REGION 'Global Functions'}
 
 const
@@ -1980,12 +2058,32 @@ end;
 
 function CeilPowerOfTwo(const Value: VectorInt): VectorInt;
 begin
+{$IFDEF EMBEDDED}
+  if (Value <= 2) or IsPowerOfTwo(Value) then
+    Exit(Value);
+
+  Result := Value shl 1;
+
+  while not IsPowerOfTwo(Result) do
+    Result := Result and (Result - 1);
+{$ELSE}
   Result := Round(Power(2, Ceil(Log2(Value))))
+{$ENDIF}
 end;
 
 function FloorPowerOfTwo(const Value: VectorInt): VectorInt;
 begin
+{$IFDEF EMBEDDED}
+  if Value <= 2 then
+    Exit(Value);
+
+  Result := Value;
+
+  while not IsPowerOfTwo(Result) do
+    Result := Result and (Result - 1);
+{$ELSE}
   Result := Round(Power(2, Floor(Log2(Value))))
+{$ENDIF}
 end;
 
 function PointInTriangle(const Point, Vertex1, Vertex2, Vertex3: TPoint2px): Boolean;
@@ -2200,6 +2298,148 @@ begin
   end;
 
   Result := (SourceRect.Width > 0) and (SourceRect.Height > 0) and (DestRect.Width > 0) and (DestRect.Height > 0);
+end;
+
+{$ENDREGION}
+{$REGION 'TRandomContext'}
+
+class function TRandomContext.Create: TRandomContext;
+begin
+  Result.Value1 := 0;
+  Result.Value2 := 0;
+  Result.Value3 := 0;
+  Result.Value4 := 0;
+end;
+
+class function TRandomContext.Create(const Seed: Cardinal; const ShuffleCount: Integer): TRandomContext;
+var
+  I: Integer;
+begin
+  Result.Value1 := $F1EA5EED;
+  Result.Value2 := Seed;
+  Result.Value3 := Seed;
+  Result.Value4 := Seed;
+
+  for I := 0 to ShuffleCount - 1 do
+    Result.GetValueRaw;
+end;
+
+function TRandomContext.GetGaussRaw: VectorFloat;
+var
+  Phi, Rho: Single;
+begin
+  Phi := GetValue * Pi * 2.0;
+  Rho := Sqrt(-2.0 * Ln(1.0 - GetValue));
+
+  Result := Cos(Phi) * Rho;
+end;
+
+class operator TRandomContext.Equal(const Context1, Context2: TRandomContext): Boolean;
+begin
+  Result :=
+    (Context1.Value1 = Context2.Value1) and
+    (Context1.Value2 = Context2.Value2) and
+    (Context1.Value3 = Context2.Value3) and
+    (Context1.Value4 = Context2.Value4);
+end;
+
+class operator TRandomContext.NotEqual(const Context1, Context2: TRandomContext): Boolean;
+begin
+  Result := not (Context1 = Context2);
+end;
+
+function TRandomContext.GetValueRaw: Cardinal;
+
+  function RandomRotate(const X: Cardinal; const K: Integer): Cardinal; inline;
+  begin
+    Result := (X shl K) or (X shr (32 - K));
+  end;
+
+var
+  Value5: Cardinal;
+begin
+  Value5 := Value1 - RandomRotate(Value2, 27);
+
+  Value1 := Value2 xor RandomRotate(Value3, 17);
+  Value2 := Value3 + Value4;
+  Value3 := Value4 + Value5;
+  Value4 := Value5 + Value1;
+
+  Result := Value4;
+end;
+
+function TRandomContext.GetValue: VectorFloat;
+begin
+  Result := ((GetValueRaw shr 4) and $7FFFFF) / 8388608.0;
+end;
+
+function TRandomContext.GetValue(const Range: Cardinal): Cardinal;
+const
+  MaxAttempts = 8192;
+var
+  Attempts, Interval: Cardinal;
+begin
+  if Range <= 1 then
+    Exit(0);
+
+  if IsPowerOfTwo(Range) then
+    Exit(GetValueRaw and (Range - 1));
+
+  if Range = High(Cardinal) then
+    Exit(GetValueRaw);
+
+  { Find a size of the bin that is power of two, and therefore is repeatable in the whole random range.
+    Generating random numbers in this range should produce uniform distribution as there is a fixed integer
+    number of such bins in the whole range. Then, keep throwing the dice until the number appears within
+    the actual desired range; in worst-case scenario, this will produce 50% of throws within the wanted range.
+    "MaxAttempts" is used to prevent infinite loop in case there is a problem with random number generator. }
+  if Range <= $80000000 then
+    Interval := CeilPowerOfTwo(Range) - 1
+  else
+    Interval := $FFFFFFFF;
+
+  for Attempts := 0 to MaxAttempts - 1 do
+  begin
+    Result := GetValueRaw and Interval;
+    if Result < Range then
+      Exit;
+  end;
+
+  { There could be a problem with random number generator. As last resort, try generating number within the requested
+    range using poor man's approach. }
+  Result := GetValueRaw mod (Range + 1);
+end;
+
+function TRandomContext.GetGaussStart: VectorFloat;
+begin
+  Result := Abs(GetGaussRaw) * 0.5;
+
+  if Result > 1.0 then
+    Result := 0.0;
+end;
+
+function TRandomContext.GetGaussEnd: VectorFloat;
+begin
+  Result := 1.0 - Abs(GetGaussRaw) * 0.5;
+
+  if Result < 0.0 then
+    Result := 1.0;
+end;
+
+function TRandomContext.GetGaussMiddle: VectorFloat;
+begin
+  Result := 0.5 + 0.25 * GetGaussRaw;
+
+  if (Result < 0.0) or (Result > 1.0) then
+    Result := 0.5;
+end;
+
+function TRandomContext.GetGaussOmni: VectorFloat;
+begin
+  Result := GetGaussRaw;
+
+  if (Result < -1.0) or (Result > 1.0) then
+    Result := 0.0;
 end;
 
 {$ENDREGION}
@@ -2599,6 +2839,12 @@ function PixelToGray(const Color: TIntColor): Integer;
 begin
   Result := ((Integer(Color and $FF) * 77) + (Integer((Color shr 8) and $FF) * 150) +
     (Integer((Color shr 16) and $FF) * 29)) div 256;
+end;
+
+function PixelToGray16(const Color: TIntColor): Integer;
+begin
+  Result := ((Integer(Color and $FF) * 19588) + (Integer((Color shr 8) and $FF) * 38445) +
+    (Integer((Color shr 16) and $FF) * 7503)) div 256;
 end;
 
 function PixelToGrayFloat(const Color: TIntColor): VectorFloat;

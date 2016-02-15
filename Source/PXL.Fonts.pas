@@ -1196,7 +1196,7 @@ end;
 
 function TBitmapFont.ReadFromXMLNode(const Node: TXMLNode): Boolean;
 var
-  Child: TXMLNode;
+  Chunk: TXMLChunk;
 begin
   Result := False;
 
@@ -1207,10 +1207,10 @@ begin
   if FSpaceWidth <= 0 then
     FSpaceWidth := FSize.X div 4;
 
-  for Child in Node do
-    if SameText(Child.Name, 'item') then
+  for Chunk in Node do
+    if (Chunk is TXMLNode) and SameText(TXMLNode(Chunk).Name, 'item') then
     begin
-      Result := ReadEntryFromXML(Child);
+      Result := ReadEntryFromXML(TXMLNode(Chunk));
       if not Result then
         Break;
     end;

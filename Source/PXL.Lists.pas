@@ -58,7 +58,6 @@ type
     function GetValuesAvg: TListInt;
     function GetValuesMax: TListInt;
     function GetValuesMin: TListInt;
-    function GetRandomValue: TListInt;
     procedure ListSwap(const Index1, Index2: Integer); inline;
     function ListCompare(const Value1, Value2: TListInt): Integer;
     function ListSplit(const Start, Stop: Integer): Integer;
@@ -92,9 +91,10 @@ type
 
     procedure InsertRepeatValue(const Value: TListInt; const Count: Integer);
 
-    procedure Shuffle;
-    procedure BestShuffle;
+    procedure Shuffle(var RandomContext: TRandomContext);
+    procedure BestShuffle(var RandomContext: TRandomContext);
     procedure RemoveDuplicates;
+    function GetRandomValue(var RandomContext: TRandomContext): TListInt;
 
     // Returns text representation of the string e.g. "21, 7, 14, 10, 20".
     function ChainToString: StdString;
@@ -119,8 +119,6 @@ type
     property ValuesAvg: TListInt read GetValuesAvg;
     property ValuesMax: TListInt read GetValuesMax;
     property ValuesMin: TListInt read GetValuesMin;
-
-    property RandomValue: TListInt read GetRandomValue;
   end;
 
   TPointList = class
@@ -321,7 +319,6 @@ type
     function GetValue(const Index: Integer): Integer;
     function GetProbability(const DataValue: TListInt): VectorFloat;
     procedure SetProbability(const DataValue: TListInt; const Probability: VectorFloat);
-    function GetRandomValue: TListInt;
   public
     constructor Create;
     destructor Destroy; override;
@@ -345,8 +342,10 @@ type
     procedure CopyFrom(const Source: TIntegerProbabilityList);
     procedure AddFrom(const Source: TIntegerProbabilityList);
 
-    function ExtractRandomValue: TListInt;
+    function ExtractRandomValue(var RandomContext: TRandomContext): TListInt;
     procedure NormalizeProbabilities;
+
+    function GetRandomValue(var RandomContext: TRandomContext): TListInt;
 
     procedure SaveToStream(const Stream: TStream);
     procedure LoadFromStream(const Stream: TStream);
@@ -360,8 +359,6 @@ type
 
     property Value[const Index: Integer]: Integer read GetValue;
     property Probability[const DataValue: TListInt]: VectorFloat read GetProbability write SetProbability; default;
-
-    property RandomValue: TListInt read GetRandomValue;
   end;
 
   TPoints2px = class
@@ -796,7 +793,7 @@ begin
   Result := IndexOf(Value) <> -1;
 end;
 
-procedure TIntegerList.BestShuffle;
+procedure TIntegerList.BestShuffle(var RandomContext: TRandomContext);
 var
   TempList: TIntegerList;
   Index: Integer;
@@ -808,7 +805,7 @@ begin
 
     while TempList.Count > 0 do
     begin
-      Index := Random(TempList.Count);
+      Index := RandomContext.GetValue(TempList.Count);
       Add(TempList[Index]);
       TempList.Remove(Index);
     end;
@@ -817,12 +814,12 @@ begin
   end;
 end;
 
-procedure TIntegerList.Shuffle;
+procedure TIntegerList.Shuffle(var RandomContext: TRandomContext);
 var
   I: Integer;
 begin
   for I := FDataCount - 1 downto 1 do
-    ListSwap(I, Random(I + 1));
+    ListSwap(I, RandomContext.GetValue(I + 1));
 end;
 
 procedure TIntegerList.Series(const NumCount: Integer);
@@ -892,10 +889,10 @@ begin
     Result := Min(Result, FData[I]);
 end;
 
-function TIntegerList.GetRandomValue: TListInt;
+function TIntegerList.GetRandomValue(var RandomContext: TRandomContext): TListInt;
 begin
   if FDataCount > 0 then
-    Result := FData[Random(FDataCount)]
+    Result := FData[RandomContext.GetValue(FDataCount)]
   else
     Result := 0;
 end;
@@ -1889,7 +1886,7 @@ begin
   end;
 end;
 
-function TIntegerProbabilityList.GetRandomValue: TListInt;
+function TIntegerProbabilityList.GetRandomValue(var RandomContext: TRandomContext): TListInt;
 var
   Sample, SampleMax, SampleIn: VectorFloat;
   I: Integer;
@@ -1903,7 +1900,7 @@ begin
   for I := 0 to FDataCount - 1 do
     SampleMax := SampleMax + FData[I].Probability;
 
-  Sample := Random * SampleMax;
+  Sample := RandomContext.GetValue * SampleMax;
 
   SampleIn := 0;
   for I := 0 to FDataCount - 1 do
@@ -1915,7 +1912,7 @@ begin
   end;
 end;
 
-function TIntegerProbabilityList.ExtractRandomValue: TListInt;
+function TIntegerProbabilityList.ExtractRandomValue(var RandomContext: TRandomContext): TListInt;
 var
   Sample, SampleMax, SampleIn: VectorFloat;
   I, SampleNo: Integer;
@@ -1929,7 +1926,7 @@ begin
   for I := 0 to FDataCount - 1 do
     SampleMax := SampleMax + FData[I].Probability;
 
-  Sample := Random * SampleMax;
+  Sample := RandomContext.GetValue * SampleMax;
 
   SampleIn := 0.0;
   SampleNo := -1;

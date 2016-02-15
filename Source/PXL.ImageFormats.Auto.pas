@@ -49,7 +49,7 @@ begin
   Result := TWICImageFormatHandler.Create(ImageFormatManager);
 {$ELSE}
   {$IFDEF USE_VAMPYRE_IMAGING}
-    Result := TWICImageFormatHandler.Create(ImageFormatManager);
+    Result := TVampyreImageFormatHandler.Create(ImageFormatManager);
   {$ELSE}
     Result := TFCLImageFormatHandler.Create(ImageFormatManager);
   {$ENDIF}

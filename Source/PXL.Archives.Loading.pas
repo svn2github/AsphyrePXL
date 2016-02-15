@@ -412,6 +412,7 @@ begin
       Stream.Position := 0;
 
       Image := TAtlasImage.Create(Images.Device, False);
+      Image.Name := ChangeFileExt(ExtractFileName(Key), '');
       Image.MipMapping := MipMapping;
       Image.PixelFormat := PixelFormat;
 

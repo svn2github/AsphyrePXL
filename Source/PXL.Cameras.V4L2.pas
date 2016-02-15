@@ -81,6 +81,7 @@ type
 
     procedure SetSize(const Value: TPoint2px);
     procedure ConvertImageYUYV(const Source: Pointer; const Surface: TPixelSurface);
+    procedure ConvertImageYU12(const Source: Pointer; const Surface: TPixelSurface);
   public
     constructor Create(const ASystemPath: StdString = DefaultSystemPath);
     destructor Destroy; override;
@@ -124,7 +125,6 @@ type
   EV4L2Format = class(EV4L2Generic);
   EV4L2GetFormat = class(EV4L2Format);
   EV4L2SetFormat = class(EV4L2Format);
-  EV4L2SetPixelFormat = class(EV4L2SetFormat);
   EV4L2SetVideoSize = class(EV4L2SetFormat);
   EV4L2UnsupportedFormat = class(EV4L2Format);
 
@@ -144,9 +144,7 @@ type
 resourcestring
   SCannotOpenCameraDeviceFile = 'Cannot open camera device file <%s> for reading and writing.';
   SCannotObtainCameraFormat = 'Cannot obtain camera device format.';
-  SCannotChangeCameraFormat = 'Cannot change camera device format.';
   SUnsupportedCameraFormat = 'Unsupported camera device format (%s).';
-  SCannotSetCameraPixelFormat = 'Cannot set camera pixel format format.';
   SCannotSetCameraVideoSize = 'Cannot set new video size (%d by %d).';
   SCannotObtainCameraBuffers = 'Cannot obtaim %d camera device buffers.';
   SCannotAssociateCameraBuffer = 'Cannot associate buffer %d with camera device.';
@@ -440,9 +438,9 @@ begin
   Write('[V4L2] Setting video format...');
 {$ENDIF}
 
-  if not TryVideoFormat(V4L2_PIX_FMT_BGR32) then
-    if not TryVideoFormat(V4L2_PIX_FMT_YUYV) then
-      raise EV4L2UnsupportedFormat.Create(Format(SUnsupportedCameraFormat, [FormatToString(FPixelFormat)]));
+  if (not TryVideoFormat(V4L2_PIX_FMT_BGR32)) and (not TryVideoFormat(V4L2_PIX_FMT_YUYV)) and
+    (not TryVideoFormat(V4L2_PIX_FMT_YUV420)) then
+    raise EV4L2UnsupportedFormat.Create(Format(SUnsupportedCameraFormat, [FormatToString(FPixelFormat)]));
 
 {$IFDEF V4L2_CAMERA_DEBUG}
   WriteLn('OK.');
@@ -491,7 +489,7 @@ begin
   LFormat.pix.pixelformat := AVideoFormat;
 
   if FpIOCtl(FHandle, VIDIOC_S_FMT, @LFormat) < 0 then
-    raise EV4L2SetPixelFormat.Create(SCannotSetCameraPixelFormat);
+    Exit(False);
 
 // Uncomment to show some interesting information about current camera format.
 { WriteLn('Width: ', LFormat.pix.width);
@@ -569,28 +567,24 @@ type
     Y1, U, Y2, V: Byte;
   end;
 
-  procedure PixelToColors(SrcPixel: PPixelYUYV; var DestPixels: PIntColor); inline;
+  function PixelYUVToRGB(const Y, U, V: Integer): TIntColor; inline;
   var
-    YValue: Integer;
+    TempY: Integer;
   begin
-    YValue := (Integer(SrcPixel.Y1) - 16) * 298;
+    TempY := (Y - 16) * 298;
 
-    PIntColorRec(DestPixels).Red := Saturate((YValue + 409 * (Integer(SrcPixel.V) - 128) + 128) div 256, 0, 255);
-    PIntColorRec(DestPixels).Green := Saturate((YValue - 100 * (Integer(SrcPixel.U) - 128) - 208 *
-      (Integer(SrcPixel.V) - 128) + 128) div 256, 0, 255);
-    PIntColorRec(DestPixels).Blue := Saturate((YValue + 516 * (Integer(SrcPixel.U) - 128) + 128) div 256, 0, 255);
-    PIntColorRec(DestPixels).Alpha := 255;
+    TIntColorRec(Result).Red := Saturate((TempY + 409 * (U - 128) + 128) div 256, 0, 255);
+    TIntColorRec(Result).Green := Saturate((TempY - 100 * (U - 128) - 208 * (V - 128) + 128) div 256, 0, 255);
+    TIntColorRec(Result).Blue := Saturate((TempY + 516 * (U - 128) + 128) div 256, 0, 255);
+    TIntColorRec(Result).Alpha := 255;
+  end;
 
+  procedure PixelToColors(SrcPixel: PPixelYUYV; var DestPixels: PIntColor); inline;
+  begin
+    DestPixels^ := PixelYUVToRGB(SrcPixel.Y1, SrcPixel.U, SrcPixel.V);
     Inc(DestPixels);
 
-    YValue := (Integer(SrcPixel.Y2) - 16) * 298;
-
-    PIntColorRec(DestPixels).Red := Saturate((YValue + 409 * (Integer(SrcPixel.V) - 128) + 128) div 256, 0, 255);
-    PIntColorRec(DestPixels).Green := Saturate((YValue - 100 * (Integer(SrcPixel.U) - 128) - 208 *
-      (Integer(SrcPixel.V) - 128) + 128) div 256, 0, 255);
-    PIntColorRec(DestPixels).Blue := Saturate((YValue + 516 * (Integer(SrcPixel.U) - 128) + 128) div 256, 0, 255);
-    PIntColorRec(DestPixels).Alpha := 255;
-
+    DestPixels^ := PixelYUVToRGB(SrcPixel.Y2, SrcPixel.U, SrcPixel.V);
     Inc(DestPixels);
   end;
 
@@ -613,6 +607,49 @@ begin
   end;
 end;
 
+procedure TV4L2Camera.ConvertImageYU12(const Source: Pointer; const Surface: TPixelSurface);
+
+  function PixelYUVToRGB(const Y, U, V: Integer): TIntColor; inline;
+  begin
+    TIntColorRec(Result).Red := Saturate(Y + (351 * (V - 128)) div 256, 0, 255);
+    TIntColorRec(Result).Green := Saturate(Y - (179 * (V - 128) + 86 * (U - 128)) div 256, 0, 255);
+    TIntColorRec(Result).Blue := Saturate(Y + (444 * (U - 128)) div 256, 0, 255);
+    TIntColorRec(Result).Alpha := 255;
+  end;
+
+var
+  I, J: Integer;
+  UVPitch, UVOffset: Cardinal;
+  StartU, StartV: PtrUInt;
+  SrcY, SrcU, SrcV: PByte;
+  DestPixel: PIntColor;
+begin
+  SrcY := Source;
+
+  UVPitch := Cardinal(FSize.X) div 2;
+
+  StartU := PtrUInt(Source) + Cardinal(FSize.X) * Cardinal(FSize.Y);
+  StartV := StartU + UVPitch * Cardinal(FSize.Y div 2);
+
+  for J := 0 to Surface.Height - 1 do
+  begin
+    DestPixel := Surface.Scanline[J];
+
+    for I := 0 to Surface.Width - 1 do
+    begin
+      UVOffset := (J div 2) * UVPitch + (I div 2);
+
+      SrcU := Pointer(StartU + UVOffset);
+      SrcV := Pointer(StartV + UVOffset);
+
+      DestPixel^ := PixelYUVToRGB(SrcY^, SrcU^, SrcV^);
+
+      Inc(SrcY);
+      Inc(DestPixel);
+    end;
+  end;
+end;
+
 procedure TV4L2Camera.TakeSnapshot(const DestSurface: TPixelSurface);
 var
   Buffer: Pointer;
@@ -631,7 +668,7 @@ begin
     end;
 
     if FPixelFormat = V4L2_PIX_FMT_BGR32 then
-    begin
+    begin // X8B8G8R8
       if (DestSurface.Size <> FSize) or (DestSurface.PixelFormat <> TPixelFormat.X8B8G8R8) then
         DestSurface.SetSize(FSize, TPixelFormat.X8B8G8R8);
 
@@ -639,9 +676,18 @@ begin
         Move(Pointer(PtrUInt(Buffer) + (I * FSize.X * SizeOf(TIntColor)))^, DestSurface.Scanline[I]^,
           FSize.X * SizeOf(TIntColor));
     end
+    else if FPixelFormat = V4L2_PIX_FMT_YUV420 then
+    begin // YU12
+      if (DestSurface.Size <> FSize) or ((DestSurface.PixelFormat <> TPixelFormat.X8R8G8B8) and
+        (DestSurface.PixelFormat <> TPixelFormat.A8R8G8B8)) then
+        DestSurface.SetSize(FSize, TPixelFormat.X8R8G8B8);
+
+      ConvertImageYU12(Buffer, DestSurface);
+    end
     else
-    begin
-      if (DestSurface.Size <> FSize) or (DestSurface.PixelFormat <> TPixelFormat.X8R8G8B8) then
+    begin // YUYV
+      if (DestSurface.Size <> FSize) or ((DestSurface.PixelFormat <> TPixelFormat.X8R8G8B8) and
+        (DestSurface.PixelFormat <> TPixelFormat.A8R8G8B8)) then
         DestSurface.SetSize(FSize, TPixelFormat.X8R8G8B8);
 
       ConvertImageYUYV(Buffer, DestSurface);

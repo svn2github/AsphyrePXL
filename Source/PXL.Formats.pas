@@ -113,7 +113,9 @@ type
     { Sorts existing pixel format entries in the list according to their similarity to the given pixel format. }
     procedure SortBestMatch(const Format: TPixelFormat);
 
-    { @exclude } function GetEnumerator: TEnumerator;
+  {$IFNDEF PASDOC}
+    function GetEnumerator: TEnumerator;
+  {$ENDIF}
 
     property Count: Integer read GetCount write SetCount;
     property Items[const Index: Integer]: TPixelFormat read GetItem write SetItem; default;
@@ -235,6 +237,8 @@ implementation
 uses
   SysUtils;
 
+{$REGION 'Global Types and Constants'}
+
 type
   PPixelFormatInfo = ^TPixelFormatInfo;
   TPixelFormatInfo = packed record
@@ -275,6 +279,7 @@ const
     (Rp: 255; Rb:  0; Gp: 255; Gb:  0; Bp: 255; Bb:  0; Ap:   0; Ab:  8; Lp: 255; Lb:  0; Dt:   0; Bi:   8), // A8
     (Rp:   0; Rb: 16; Gp:  16; Gb: 16; Bp: 255; Bb:  0; Ap: 255; Ab:  0; Lp: 255; Lb:  0; Dt:   0; Bi:  32), // G16R16
     (Rp:  20; Rb: 10; Gp:  10; Gb: 10; Bp:   0; Bb: 10; Ap:  30; Ab:  2; Lp: 255; Lb:  0; Dt:   0; Bi:  32), // A2R10G10B10
+    (Rp:  20; Rb: 10; Gp:  10; Gb: 10; Bp:   0; Bb: 10; Ap: 255; Ab:  0; Lp:  30; Lb:  2; Dt:   0; Bi:  32), // X2R10G10B10
     (Rp:   0; Rb:  8; Gp:   8; Gb:  8; Bp:  16; Bb:  8; Ap:  24; Ab:  8; Lp: 255; Lb:  0; Dt:   0; Bi:  32), // A8B8G8R8
     (Rp:   0; Rb:  8; Gp:   8; Gb:  8; Bp:  16; Bb:  8; Ap: 255; Ab:  0; Lp:  24; Lb:  8; Dt:   0; Bi:  32), // X8B8G8R8
     (Rp:  16; Rb:  8; Gp:   8; Gb:  8; Bp:   0; Bb:  8; Ap: 255; Ab:  0; Lp: 255; Lb:  0; Dt:   0; Bi:  24), // R8G8B8
@@ -286,7 +291,10 @@ const
   PixelFormatNames: array[TPixelFormat] of StdString = ('UNKNOWN', 'A8R8G8B8', 'X8R8G8B8', 'A4R4G4B4', 'X4R4G4B4',
     'R5G6B5', 'A1R5G5B5', 'X1R5G5B5', 'A2R2G2B2', 'R3G3B2', 'A8R3G3B2', 'A2B10G10R10', 'A16B16G16R16', 'A8L8', 'A4L4',
     'L16', 'L8', 'R16F', 'G16R16F', 'A16B16G16R16F', 'R32F', 'G32R32F', 'A32B32G32R32F', 'A8', 'G16R16', 'A2R10G10B10',
-    'A8B8G8R8', 'X8B8G8R8', 'R8G8B8',  'B8G8R8A8', 'B8G8R8X8', 'I8');
+    'X2R10G10B10', 'A8B8G8R8', 'X8B8G8R8', 'R8G8B8',  'B8G8R8A8', 'B8G8R8X8', 'I8');
+
+{$ENDREGION}
+{$REGION 'TPixelFormatColorBits'}
 
 class operator TPixelFormatColorBits.Equal(const ColorBits1, ColorBits2: TPixelFormatColorBits): Boolean;
 begin
@@ -297,6 +305,9 @@ class operator TPixelFormatColorBits.NotEqual(const ColorBits1, ColorBits2: TPix
 begin
   Result := not (ColorBits1 = ColorBits2);
 end;
+
+{$ENDREGION}
+{$REGION 'TPixelFormatDescription'}
 
 class operator TPixelFormatDescription.Equal(const Desc1, Desc2: TPixelFormatDescription): Boolean;
 begin
@@ -326,6 +337,9 @@ begin
   UsedBitCount := RedBits.Count + GreenBits.Count + BlueBits.Count + AlphaBits.Count;
 end;
 
+{$ENDREGION}
+{$REGION 'Global Functions'}
+
 function PixelXTo32(const Source: Pointer; const SourceFormat: TPixelFormat): TIntColor;
 var
   Bits: Integer;
@@ -338,7 +352,7 @@ begin
 
   if Bits > 32 then
   begin
-    if (SourceFormat = TPixelFormat.A16B16G16R16) then
+    if SourceFormat = TPixelFormat.A16B16G16R16 then
     begin
       Value := PLongWord(Source)^;
       Result := (((Value shl 16) shr 24) shl 16) or ((Value shr 24) shl 8);
@@ -462,7 +476,7 @@ begin
 
   if Bits > 32 then
   begin
-    if (DestFormat = TPixelFormat.A16B16G16R16) then
+    if DestFormat = TPixelFormat.A16B16G16R16 then
     begin
       PLongWord(Dest)^ := (((((Source shl 16) shr 24) * $FFFF) div $FF) shl 16) or
         ((((Source shl 8) shr 24) * $FFFF) div $FF);
@@ -504,7 +518,7 @@ begin
       Value := ((Source shr 28) shl 4) or Cardinal(PixelToGray(Source) shr 4);
 
     TPixelFormat.L16:
-      Value := Round(PixelToGrayFloat(Source) * 65535.0);
+      Value := Cardinal(PixelToGray16(Source));
 
     TPixelFormat.B8G8R8A8:
       Value := ((Source shr 24) and $FF) or (((Source shr 16) and $FF) shl 8) or (((Source shr 8) and $FF) shl 16) or
@@ -525,7 +539,7 @@ begin
         Value := Value or (((Source shr 8) and $FF) shr (8 - Info.Gb)) shl Info.Gp;
 
       if Info.Rb > 0 then
-        Value := Value or (((Source shr 16) and $FF) shr (8 - Info.Bb)) shl Info.Rp;
+        Value := Value or (((Source shr 16) and $FF) shr (8 - Info.Rb)) shl Info.Rp;
 
       if Info.Ab > 0 then
         Value := Value or (((Source shr 24) and $FF) shr (8 - Info.Ab)) shl Info.Ap;
@@ -862,6 +876,9 @@ begin
   Result := True;
 end;
 
+{$ENDREGION}
+{$REGION 'TPixelFormatDescription'}
+
 class function TPixelFormatHelper.CreateFromString(const Text: StdString): TPixelFormat;
 var
   TempText: StdString;
@@ -922,11 +939,14 @@ begin
     ((Self = TPixelFormat.I8) and (DestFormat = TPixelFormat.L8));
 end;
 
+{$ENDREGION}
+{$REGION 'TPixelFormatList'}
+
 constructor TPixelFormatList.TEnumerator.Create(const AList: TPixelFormatList);
 begin
   inherited Create;
 
-  Inc(PXL_ClassInstances);
+  Increment_PXL_ClassInstances;
 
   FList := AList;
   Index := -1;
@@ -934,7 +954,7 @@ end;
 
 destructor TPixelFormatList.TEnumerator.Destroy;
 begin
-  Dec(PXL_ClassInstances);
+  Decrement_PXL_ClassInstances;
 
   inherited;
 end;
@@ -1291,5 +1311,7 @@ begin
 
   Result := TPixelFormat.Unknown;
 end;
+
+{$ENDREGION}
 
 end.

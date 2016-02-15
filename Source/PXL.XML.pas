@@ -19,24 +19,45 @@ uses
   SysUtils, Classes, PXL.Classes, PXL.TypeDef;
 
 type
-  TXMLNode = class
+  TXMLNode = class;
+
+  TXMLChunk = class
+  private
+    {$IFDEF AUTOREFCOUNT}[weak]{$ENDIF} FParent: TXMLNode;
+  public
+    constructor Create(const AParent: TXMLNode);
+    destructor Destroy; override;
+
+    property Parent: TXMLNode read FParent;
+  end;
+
+  TXMLText = class(TXMLChunk)
+  private
+    FText: StdString;
+  public
+    constructor Create(const AParent: TXMLNode; const AText: StdString);
+
+    property Text: StdString read FText;
+  end;
+
+  TXMLNode = class(TXMLChunk)
   public type
     PFieldItem = ^TFieldItem;
     TFieldItem = record
-      Name : StdString;
+      Name: StdString;
       Value: StdString;
     end;
 
     TEnumerator = class
     private
-      {$IFDEF AUTOREFCOUNT}[weak]{$ENDIF} FNode: TXMLNode;
-      Index: Integer;
-      function GetCurrent: TXMLNode;
+      {$IFDEF AUTOREFCOUNT}[weak]{$ENDIF} FOwner: TXMLNode;
+      FIndex: Integer;
+      function GetCurrent: TXMLChunk;
     public
-      constructor Create(const ANode: TXMLNode);
+      constructor Create(const AOwner: TXMLNode);
       destructor Destroy; override;
       function MoveNext: Boolean;
-      property Current: TXMLNode read GetCurrent;
+      property Current: TXMLChunk read GetCurrent;
     end;
   private const
     FieldGrowIncrement = 8;
@@ -45,20 +66,19 @@ type
     ChildGrowFraction = 5;
     GeneratedXMLTabWidth = 2;
   private
-    {$IFDEF AUTOREFCOUNT}[weak]{$ENDIF} FParent: TXMLNode;
     FName: StdString;
 
-    FieldItems: array of TFieldItem;
-    FieldItemCount: Integer;
+    FFieldItems: array of TFieldItem;
+    FFieldItemCount: Integer;
 
-    FieldSearchList: array of Integer;
-    FieldSearchListDirty: Boolean;
+    FFieldSearchList: array of Integer;
+    FFieldSearchListDirty: Boolean;
 
-    ChildItems: array of TXMLNode;
-    ChildItemCount: Integer;
+    FChildItems: array of TXMLChunk;
+    FChildItemCount: Integer;
 
-    ChildSearchList: array of Integer;
-    ChildSearchListDirty: Boolean;
+    FChildSearchList: array of Integer;
+    FChildSearchListDirty: Boolean;
 
     function GetFieldCount: Integer;
     function GetField(const Index: Integer): PFieldItem;
@@ -73,7 +93,7 @@ type
     procedure SetFieldValue(const FieldName, Value: StdString);
 
     function GetChildCount: Integer;
-    function GetChild(const Index: Integer): TXMLNode;
+    function GetChild(const Index: Integer): TXMLChunk;
     procedure RequestChildren(const NeedCapacity: Integer);
     procedure InitChildSearchList;
     procedure ChildSearchListSwap(const Index1, Index2: Integer);
@@ -81,12 +101,14 @@ type
     function ChildSearchListSplit(const Start, Stop: Integer): Integer;
     procedure ChildSearchListSort(const Start, Stop: Integer);
     procedure UpdateChildSearchList;
-    function GetChildNode(const ChildName: StdString): TXMLNode;
+    function GetChildNode(const ChildNodeName: StdString): TXMLNode;
 
     function GenerateSourceSubCode(const Spacing: Integer = 0): StdString;
   public
     constructor Create(const AName: StdString = ''; const AParent: TXMLNode = nil);
     destructor Destroy; override;
+
+    function GetEnumerator: TEnumerator;
 
     function AddField(const FieldName, FieldValue: StdString): Integer;
     function IndexOfField(const FieldName: StdString): Integer;
@@ -94,8 +116,11 @@ type
     procedure RemoveField(const Index: Integer);
     procedure ClearFields;
 
-    function AddChildNode(const ChildName: StdString): TXMLNode;
-    function AddChild(const ChildName: StdString): Integer;
+    function AddChildNode(const ChildNodeName: StdString): Integer;
+    function AddChildNodeRet(const ChildNodeName: StdString): TXMLNode;
+
+    function AddChildText(const TextContent: StdString): Integer;
+    function AddChildTextRet(const TextContent: StdString): TXMLText;
 
     function IndexOfChild(const ChildName: StdString): Integer;
 
@@ -107,18 +132,15 @@ type
     function SaveToFile(const FileName: StdString): Boolean;
     function SaveToStream(const Stream: TStream): Boolean;
 
-    function GetEnumerator: TEnumerator;
-
-    property Parent: TXMLNode read FParent;
     property Name: StdString read FName;
 
     property FieldCount: Integer read GetFieldCount;
-    property Field[const Index: Integer]: PFieldItem read GetField;
+    property Fields[const Index: Integer]: PFieldItem read GetField;
     property FieldValue[const FieldName: StdString]: StdString read GetFieldValue write SetFieldValue;
 
     property ChildCount: Integer read GetChildCount;
-    property Child[const Index: Integer]: TXMLNode read GetChild;
-    property ChildNode[const ChildName: StdString]: TXMLNode read GetChildNode;
+    property Children[const Index: Integer]: TXMLChunk read GetChild;
+    property ChildNode[const ChildNodeName: StdString]: TXMLNode read GetChildNode;
   end;
 
 function LoadXMLFromText(const Text: StdString): TXMLNode;
@@ -128,16 +150,44 @@ function LoadXMLFromAsset(const AssetName: StdString): TXMLNode;
 
 implementation
 
-{$REGION 'TXMLNode'}
+{$REGION 'TXMLChunk'}
 
-constructor TXMLNode.TEnumerator.Create(const ANode: TXMLNode);
+constructor TXMLChunk.Create(const AParent: TXMLNode);
+begin
+  inherited Create;
+
+  Increment_PXL_ClassInstances;
+  FParent := AParent;
+end;
+
+destructor TXMLChunk.Destroy;
+begin
+  Decrement_PXL_ClassInstances;
+
+  inherited;
+end;
+
+{$ENDREGION}
+{$REGION 'TXMLText'}
+
+constructor TXMLText.Create(const AParent: TXMLNode; const AText: StdString);
+begin
+  inherited Create(AParent);
+
+  FText := AText;
+end;
+
+{$ENDREGION}
+{$REGION 'TXMLNode.TEnumerator'}
+
+constructor TXMLNode.TEnumerator.Create(const AOwner: TXMLNode);
 begin
   inherited Create;
 
   Increment_PXL_ClassInstances;
 
-  FNode := ANode;
-  Index := -1;
+  FOwner := AOwner;
+  FIndex := -1;
 end;
 
 destructor TXMLNode.TEnumerator.Destroy;
@@ -147,49 +197,45 @@ begin
   inherited;
 end;
 
-function TXMLNode.TEnumerator.GetCurrent: TXMLNode;
+function TXMLNode.TEnumerator.GetCurrent: TXMLChunk;
 begin
-  Result := FNode.Child[Index];
+  Result := FOwner.Children[FIndex];
 end;
 
 function TXMLNode.TEnumerator.MoveNext: Boolean;
 begin
-  Result := Index < FNode.ChildCount - 1;
+  Result := FIndex < FOwner.ChildCount - 1;
 
   if Result then
-    Inc(Index);
+    Inc(FIndex);
 end;
+
+{$ENDREGION}
+{$REGION 'TXMLNode'}
 
 constructor TXMLNode.Create(const AName: StdString; const AParent: TXMLNode);
 begin
-  inherited Create;
-
-  Increment_PXL_ClassInstances;
+  inherited Create(AParent);
 
   FName := AName;
-  FParent := AParent;
 end;
 
 destructor TXMLNode.Destroy;
 begin
-  try
-    ClearChildren;
-  finally
-    Decrement_PXL_ClassInstances;
-  end;
+  ClearChildren;
 
   inherited;
 end;
 
 function TXMLNode.GetFieldCount: Integer;
 begin
-  Result := FieldItemCount;
+  Result := FFieldItemCount;
 end;
 
 function TXMLNode.GetField(const Index: Integer): PFieldItem;
 begin
-  if (Index >= 0) and (Index < FieldItemCount) then
-    Result := @FieldItems[Index]
+  if (Index >= 0) and (Index < FFieldItemCount) then
+    Result := @FFieldItems[Index]
   else
     Result := nil;
 end;
@@ -201,7 +247,7 @@ begin
   if NeedCapacity < 1 then
     Exit;
 
-  Capacity := Length(FieldItems);
+  Capacity := Length(FFieldItems);
 
   if Capacity < NeedCapacity then
   begin
@@ -210,7 +256,7 @@ begin
     if NewCapacity < NeedCapacity then
       NewCapacity := FieldGrowIncrement + NeedCapacity + (NeedCapacity div FieldGrowFraction);
 
-    SetLength(FieldItems, NewCapacity);
+    SetLength(FFieldItems, NewCapacity);
   end;
 end;
 
@@ -218,14 +264,14 @@ function TXMLNode.AddField(const FieldName, FieldValue: StdString): Integer;
 var
   Index: Integer;
 begin
-  Index := FieldItemCount;
-  RequestFields(FieldItemCount + 1);
+  Index := FFieldItemCount;
+  RequestFields(FFieldItemCount + 1);
 
-  FieldItems[Index].Name := FieldName;
-  FieldItems[Index].Value := FieldValue;
+  FFieldItems[Index].Name := FieldName;
+  FFieldItems[Index].Value := FieldValue;
 
-  Inc(FieldItemCount);
-  FieldSearchListDirty := True;
+  Inc(FFieldItemCount);
+  FFieldSearchListDirty := True;
 
   Result := Index;
 end;
@@ -234,25 +280,25 @@ procedure TXMLNode.InitFieldSearchList;
 var
   I: Integer;
 begin
-  if Length(FieldSearchList) <> FieldItemCount then
-    SetLength(FieldSearchList, FieldItemCount);
+  if Length(FFieldSearchList) <> FFieldItemCount then
+    SetLength(FFieldSearchList, FFieldItemCount);
 
-  for I := 0 to FieldItemCount - 1 do
-    FieldSearchList[I] := I;
+  for I := 0 to FFieldItemCount - 1 do
+    FFieldSearchList[I] := I;
 end;
 
 procedure TXMLNode.FieldSearchListSwap(const Index1, Index2: Integer);
 var
   TempValue: Integer;
 begin
-  TempValue := FieldSearchList[Index1];
-  FieldSearchList[Index1] := FieldSearchList[Index2];
-  FieldSearchList[Index2] := TempValue;
+  TempValue := FFieldSearchList[Index1];
+  FFieldSearchList[Index1] := FFieldSearchList[Index2];
+  FFieldSearchList[Index2] := TempValue;
 end;
 
 function TXMLNode.FieldSearchListCompare(const Value1, Value2: Integer): Integer;
 begin
-  Result := CompareText(FieldItems[Value1].Name, FieldItems[Value2].Name);
+  Result := CompareText(FFieldItems[Value1].Name, FFieldItems[Value2].Name);
 end;
 
 function TXMLNode.FieldSearchListSplit(const Start, Stop: Integer): Integer;
@@ -261,14 +307,14 @@ var
 begin
   Left := Start + 1;
   Right := Stop;
-  Pivot := FieldSearchList[Start];
+  Pivot := FFieldSearchList[Start];
 
   while Left <= Right do
   begin
-    while (Left <= Stop) and (FieldSearchListCompare(FieldSearchList[Left], Pivot) < 0) do
+    while (Left <= Stop) and (FieldSearchListCompare(FFieldSearchList[Left], Pivot) < 0) do
       Inc(Left);
 
-    while (Right > Start) and (FieldSearchListCompare(FieldSearchList[Right], Pivot) >= 0) do
+    while (Right > Start) and (FieldSearchListCompare(FFieldSearchList[Right], Pivot) >= 0) do
       Dec(Right);
 
     if Left < Right then
@@ -297,32 +343,32 @@ procedure TXMLNode.UpdateFieldSearchList;
 begin
   InitFieldSearchList;
 
-  if FieldItemCount > 1 then
-    FieldSearchListSort(0, FieldItemCount - 1);
+  if FFieldItemCount > 1 then
+    FieldSearchListSort(0, FFieldItemCount - 1);
 
-  FieldSearchListDirty := False;
+  FFieldSearchListDirty := False;
 end;
 
 function TXMLNode.IndexOfField(const FieldName: StdString): Integer;
 var
   Lo, Hi, Mid, Res: Integer;
 begin
-  if FieldSearchListDirty then
+  if FFieldSearchListDirty then
     UpdateFieldSearchList;
 
   Result := -1;
 
   Lo := 0;
-  Hi := Length(FieldSearchList) - 1;
+  Hi := Length(FFieldSearchList) - 1;
 
   while Lo <= Hi do
   begin
     Mid := (Lo + Hi) div 2;
-    Res := CompareText(FieldItems[FieldSearchList[Mid]].Name, FieldName);
+    Res := CompareText(FFieldItems[FFieldSearchList[Mid]].Name, FieldName);
 
     if Res = 0 then
     begin
-      Result := FieldSearchList[Mid];
+      Result := FFieldSearchList[Mid];
       Break;
     end;
 
@@ -340,7 +386,7 @@ begin
   Index := IndexOfField(FieldName);
 
   if Index <> -1 then
-    Result := FieldItems[Index].Value
+    Result := FFieldItems[Index].Value
   else
     Result := '';
 end;
@@ -352,7 +398,7 @@ begin
   Index := IndexOfField(FieldName);
 
   if Index <> -1 then
-    FieldItems[Index].Value := Value
+    FFieldItems[Index].Value := Value
   else
     AddField(FieldName, Value);
 end;
@@ -361,34 +407,34 @@ procedure TXMLNode.RemoveField(const Index: Integer);
 var
   I: Integer;
 begin
-  if (Index < 0) or (Index >= FieldItemCount) then
+  if (Index < 0) or (Index >= FFieldItemCount) then
     Exit;
 
-  for I := Index to FieldItemCount - 2 do
-    FieldItems[I] := FieldItems[I + 1];
+  for I := Index to FFieldItemCount - 2 do
+    FFieldItems[I] := FFieldItems[I + 1];
 
-  Dec(FieldItemCount);
-  FieldSearchListDirty := True;
+  Dec(FFieldItemCount);
+  FFieldSearchListDirty := True;
 end;
 
 procedure TXMLNode.ClearFields;
 begin
-  if FieldItemCount > 0 then
+  if FFieldItemCount > 0 then
   begin
-    FieldItemCount := 0;
-    FieldSearchListDirty := True;
+    FFieldItemCount := 0;
+    FFieldSearchListDirty := True;
   end;
 end;
 
 function TXMLNode.GetChildCount: Integer;
 begin
-  Result := ChildItemCount;
+  Result := FChildItemCount;
 end;
 
-function TXMLNode.GetChild(const Index: Integer): TXMLNode;
+function TXMLNode.GetChild(const Index: Integer): TXMLChunk;
 begin
-  if (Index >= 0) and (Index < ChildItemCount) then
-    Result := ChildItems[Index]
+  if (Index >= 0) and (Index < FChildItemCount) then
+    Result := FChildItems[Index]
   else
     Result := nil;
 end;
@@ -400,7 +446,7 @@ begin
   if NeedCapacity < 1 then
     Exit;
 
-  Capacity := Length(ChildItems);
+  Capacity := Length(FChildItems);
 
   if Capacity < NeedCapacity then
   begin
@@ -409,63 +455,102 @@ begin
     if NewCapacity < NeedCapacity then
       NewCapacity := ChildGrowIncrement + NeedCapacity + (NeedCapacity div ChildGrowFraction);
 
-    SetLength(ChildItems, NewCapacity);
+    SetLength(FChildItems, NewCapacity);
 
     for I := Capacity to NewCapacity - 1 do
-      ChildItems[I] := nil;
+      FChildItems[I] := nil;
   end;
 end;
 
-function TXMLNode.AddChild(const ChildName: StdString): Integer;
+function TXMLNode.AddChildNode(const ChildNodeName: StdString): Integer;
 var
   Index: Integer;
 begin
-  Index := ChildItemCount;
-  RequestChildren(ChildItemCount + 1);
+  Index := FChildItemCount;
+  RequestChildren(FChildItemCount + 1);
 
-  ChildItems[Index] := TXMLNode.Create(ChildName, Self);
+  FChildItems[Index] := TXMLNode.Create(ChildNodeName, Self);
 
-  Inc(ChildItemCount);
-  ChildSearchListDirty := True;
+  Inc(FChildItemCount);
+  FChildSearchListDirty := True;
 
   Result := Index;
 end;
 
-function TXMLNode.AddChildNode(const ChildName: StdString): TXMLNode;
+function TXMLNode.AddChildNodeRet(const ChildNodeName: StdString): TXMLNode;
 var
   Index: Integer;
 begin
-  Index := AddChild(ChildName);
+  Index := AddChildNode(ChildNodeName);
 
   if Index <> -1 then
-    Result := ChildItems[Index]
+    Result := TXMLNode(FChildItems[Index])
+  else
+    Result := nil;
+end;
+
+function TXMLNode.AddChildText(const TextContent: StdString): Integer;
+var
+  Index: Integer;
+begin
+  Index := FChildItemCount;
+  RequestChildren(FChildItemCount + 1);
+
+  FChildItems[Index] := TXMLText.Create(Self, TextContent);
+
+  Inc(FChildItemCount);
+  FChildSearchListDirty := True;
+
+  Result := Index;
+end;
+
+function TXMLNode.AddChildTextRet(const TextContent: StdString): TXMLText;
+var
+  Index: Integer;
+begin
+  Index := AddChildText(TextContent);
+
+  if Index <> -1 then
+    Result := TXMLText(FChildItems[Index])
   else
     Result := nil;
 end;
 
 procedure TXMLNode.InitChildSearchList;
 var
-  I: Integer;
+  I, ChildNodeCount: Integer;
 begin
-  if Length(ChildSearchList) <> ChildItemCount then
-    SetLength(ChildSearchList, ChildItemCount);
+  // Guess initial children count opting for worst/best case scenario that all chunks are nodes.
+  if Length(FChildSearchList) <> FChildItemCount then
+    SetLength(FChildSearchList, FChildItemCount);
 
-  for I := 0 to ChildItemCount - 1 do
-    ChildSearchList[I] := I;
+  // Fill search list with child nodes only (text has no name and therefore cannot be searched).
+  ChildNodeCount := 0;
+
+  for I := 0 to FChildItemCount - 1 do
+    if FChildItems[I] is TXMLNode then
+    begin
+      FChildSearchList[ChildNodeCount] := I;
+      Inc(ChildNodeCount);
+    end;
+
+  // Update child list to actual calculated length.
+  if Length(FChildSearchList) <> ChildNodeCount then
+    SetLength(FChildSearchList, ChildNodeCount);
 end;
 
 procedure TXMLNode.ChildSearchListSwap(const Index1, Index2: Integer);
 var
   TempValue: Integer;
 begin
-  TempValue := ChildSearchList[Index1];
-  ChildSearchList[Index1] := ChildSearchList[Index2];
-  ChildSearchList[Index2] := TempValue;
+  TempValue := FChildSearchList[Index1];
+  FChildSearchList[Index1] := FChildSearchList[Index2];
+  FChildSearchList[Index2] := TempValue;
 end;
 
 function TXMLNode.ChildSearchListCompare(const Value1, Value2: Integer): Integer;
 begin
-  Result := CompareText(ChildItems[Value1].Name, ChildItems[Value2].Name);
+  Result := CompareText(TXMLNode(FChildItems[Value1]).Name, TXMLNode(FChildItems[Value2]).Name);
 end;
 
 function TXMLNode.ChildSearchListSplit(const Start, Stop: Integer): Integer;
@@ -474,14 +559,14 @@ var
 begin
   Left := Start + 1;
   Right := Stop;
-  Pivot := ChildSearchList[Start];
+  Pivot := FChildSearchList[Start];
 
   while Left <= Right do
   begin
-    while (Left <= Stop) and (ChildSearchListCompare(ChildSearchList[Left], Pivot) < 0) do
+    while (Left <= Stop) and (ChildSearchListCompare(FChildSearchList[Left], Pivot) < 0) do
       Inc(Left);
 
-    while (Right > Start) and (ChildSearchListCompare(ChildSearchList[Right], Pivot) >= 0) do
+    while (Right > Start) and (ChildSearchListCompare(FChildSearchList[Right], Pivot) >= 0) do
       Dec(Right);
 
     if Left < Right then
@@ -510,32 +595,32 @@ procedure TXMLNode.UpdateChildSearchList;
 begin
   InitChildSearchList;
 
-  if ChildItemCount > 1 then
-    ChildSearchListSort(0, ChildItemCount - 1);
+  if Length(FChildSearchList) > 1 then
+    ChildSearchListSort(0, Length(FChildSearchList) - 1);
 
-  ChildSearchListDirty := False;
+  FChildSearchListDirty := False;
 end;
 
 function TXMLNode.IndexOfChild(const ChildName: StdString): Integer;
 var
   Lo, Hi, Mid, Res: Integer;
 begin
-  if ChildSearchListDirty then
+  if FChildSearchListDirty then
     UpdateChildSearchList;
 
   Result := -1;
 
   Lo := 0;
-  Hi := Length(ChildSearchList) - 1;
+  Hi := Length(FChildSearchList) - 1;
 
   while Lo <= Hi do
   begin
     Mid := (Lo + Hi) div 2;
-    Res := CompareText(ChildItems[ChildSearchList[Mid]].Name, ChildName);
+    Res := CompareText(TXMLNode(FChildItems[FChildSearchList[Mid]]).Name, ChildName);
 
     if Res = 0 then
     begin
-      Result := ChildSearchList[Mid];
+      Result := FChildSearchList[Mid];
       Break;
     end;
 
@@ -546,14 +631,14 @@ begin
   end;
 end;
 
-function TXMLNode.GetChildNode(const ChildName: StdString): TXMLNode;
+function TXMLNode.GetChildNode(const ChildNodeName: StdString): TXMLNode;
 var
   Index: Integer;
 begin
-  Index := IndexOfChild(ChildName);
+  Index := IndexOfChild(ChildNodeName);
 
   if Index <> -1 then
-    Result := ChildItems[Index]
+    Result := TXMLNode(FChildItems[Index])
   else
     Result := nil;
 end;
@@ -562,29 +647,29 @@ procedure TXMLNode.RemoveChild(const Index: Integer);
 var
   I: Integer;
 begin
-  if (Index < 0) or (Index >= ChildItemCount) then
+  if (Index < 0) or (Index >= FChildItemCount) then
     Exit;
 
-  ChildItems[Index].Free;
+  FChildItems[Index].Free;
 
-  for I := Index to ChildItemCount - 2 do
-    ChildItems[I] := ChildItems[I + 1];
+  for I := Index to FChildItemCount - 2 do
+    FChildItems[I] := FChildItems[I + 1];
 
-  Dec(ChildItemCount);
-  ChildSearchListDirty := True;
+  Dec(FChildItemCount);
+  FChildSearchListDirty := True;
 end;
 
 procedure TXMLNode.ClearChildren;
 var
   I: Integer;
 begin
-  if ChildItemCount > 0 then
+  if FChildItemCount > 0 then
   begin
-    for I := ChildItemCount - 1 downto 0 do
-      ChildItems[I].Free;
+    for I := FChildItemCount - 1 downto 0 do
+      FChildItems[I].Free;
 
-    ChildItemCount := 0;
-    ChildSearchListDirty := True;
+    FChildItemCount := 0;
+    FChildSearchListDirty := True;
   end;
 end;
 
@@ -605,25 +690,28 @@ var
 begin
   Result := AddSpaces(Spacing) + '<' + FName;
 
-  if FieldItemCount > 0 then
+  if FFieldItemCount > 0 then
   begin
     Result := Result + ' ';
 
-    for I := 0 to FieldItemCount - 1 do
+    for I := 0 to FFieldItemCount - 1 do
     begin
-      Result := Result + FieldItems[I].Name + '="' + FieldItems[I].Value + '"';
+      Result := Result + FFieldItems[I].Name + '="' + FFieldItems[I].Value + '"';
 
-      if I < FieldItemCount - 1 then
+      if I < FFieldItemCount - 1 then
         Result := Result + ' ';
     end;
   end;
 
-  if ChildItemCount > 0 then
+  if FChildItemCount > 0 then
   begin
     Result := Result + '>'#13#10;
 
-    for I := 0 to ChildItemCount - 1 do
-      Result := Result + ChildItems[I].GenerateSourceSubCode(Spacing + GeneratedXMLTabWidth);
+    for I := 0 to FChildItemCount - 1 do
+      if FChildItems[I] is TXMLNode then
+        Result := Result + TXMLNode(FChildItems[I]).GenerateSourceSubCode(Spacing + GeneratedXMLTabWidth)
+      else if FChildItems[I] is TXMLText then
+        Result := Result + AddSpaces(Spacing + GeneratedXMLTabWidth) + TXMLText(FChildItems[I]).Text + #13#10;
 
     Result := Result + AddSpaces(Spacing) + '</' + FName + '>'#13#10;
   end
@@ -682,6 +770,7 @@ const
   XQuotes = ['"', ''''];
   XSeparators = ['+', '-', '=', '<', '>', '(', ')', '[', ']', '"', '''', ',', '.', '/', '\', ':', ';', '*', '#', '&',
     '@', '$', '%', '^', '?', '!'];
+  XNameSpecial = [':', '-'];
   XParsingOkay = 0;
   XIncompleteAttribute = -1;
   XInvalidNodeDeclaration = -2;
@@ -693,9 +782,14 @@ const
 var
   CurrentParseStatus: Integer = 0;
 
-function IsNameCharacter(const ScanCh: Char): Boolean;
+function IsNameCharacter(const ScanCh: Char): Boolean; inline;
 begin
   Result := (not (ScanCh in XWhiteSpace)) and (not (ScanCh in XSeparators));
+end;
+
+function IsNameCharacterSpecial(const ScanCh: Char): Boolean; inline;
+begin
+  Result := IsNameCharacter(ScanCh) or (ScanCh in XNameSpecial);
 end;
 
 procedure SkipBlankSpace(const Text: StdString; var TextPos: Integer);
@@ -746,6 +840,7 @@ end;
 function ScanForName(const Text: StdString; var TextPos: Integer): StdString;
 var
   StartPos, CopyLen: Integer;
+  ValidChar: Boolean;
 begin
   Result := '';
 
@@ -759,7 +854,12 @@ begin
 
   while TextPos <= Length(Text) do
   begin
-    if not IsNameCharacter(Text[TextPos]) then
+    if CopyLen > 0 then
+      ValidChar := IsNameCharacterSpecial(Text[TextPos])
+    else
+      ValidChar := IsNameCharacter(Text[TextPos]);
+
+    if not ValidChar then
       Break;
 
     Inc(CopyLen);
@@ -848,15 +948,37 @@ begin
     Node.AddField(FieldName, FieldValue);
 end;
 
+procedure ResetTextContentScan(const TextPos: Integer; out TextBlockStart, TextBlockEnd: Integer); inline;
+begin
+  TextBlockStart := TextPos;
+  TextBlockEnd := TextPos;
+end;
+
+procedure CheckForTextContent(const Node: TXMLNode; const Text: StdString; const TextPos: Integer; var TextBlockStart,
+  TextBlockEnd: Integer);
+var
+  TextContent: StdString;
+begin
+  if TextBlockEnd > TextBlockStart then
+  begin
+    TextContent := Trim(Copy(Text, TextBlockStart, TextBlockEnd - TextBlockStart));
+    if Length(TextContent) > 0 then
+      Node.AddChildText(TextContent);
+
+    ResetTextContentScan(TextPos, TextBlockStart, TextBlockEnd);
+  end;
+end;
+
 function ParseXMLNode(const Root: TXMLNode; const Text: StdString; var TextPos: Integer): TXMLNode;
 var
-  NodeName: StdString;
+  NodeName, TextContent: StdString;
+  TextBlockStart, TextBlockEnd: Integer;
 begin
   // Process node name.
   NodeName := ScanForName(Text, TextPos);
 
   if Root <> nil then
-    Result := Root.AddChildNode(NodeName)
+    Result := Root.AddChildNodeRet(NodeName)
   else
     Result := TXMLNode.Create(NodeName);
 
@@ -901,9 +1023,14 @@ begin
     Exit;
   end;
 
+  ResetTextContentScan(TextPos, TextBlockStart, TextBlockEnd);
+
   // Processing after [<NODE>]...
   while TextPos <= Length(Text) do
   begin
+    // Process text block if it was previously detected.
+    CheckForTextContent(Result, Text, TextPos, TextBlockStart, TextBlockEnd);
+
     // Skip any blank space.
     SkipBlankSpace(Text, TextPos);
     if TextPos > Length(Text) then
@@ -912,30 +1039,45 @@ begin
     // Skip "<!-- ... -->" comments.
     if HasTextPortion(Text, TextPos, '<!--') then
     begin
+      TextBlockEnd := TextPos;
       Inc(TextPos, 4);
+
       ScanAfterPortion(Text, TextPos, '-->');
+      ResetTextContentScan(TextPos, TextBlockStart, TextBlockEnd);
+
       Continue;
     end;
 
     // Skip "<? ... ?>" tags.
     if HasTextPortion(Text, TextPos, '<?') then
     begin
+      TextBlockEnd := TextPos;
       Inc(TextPos, 2);
+
       ScanAfterPortion(Text, TextPos, '?>');
+      ResetTextContentScan(TextPos, TextBlockStart, TextBlockEnd);
+
       Continue;
     end;
 
     // Skip "<!doctype >" tags.
     if HasTextPortion(Text, TextPos, '<!doctype') then
     begin
+      TextBlockEnd := TextPos;
       Inc(TextPos, 9);
+
       ScanAfterChar(Text, TextPos, '>');
+      ResetTextContentScan(TextPos, TextBlockStart, TextBlockEnd);
+
       Continue;
     end;
 
     // End of node "</NODE>"
     if HasTextPortion(Text, TextPos, '</') then
     begin
+      TextBlockEnd := TextPos;
+      CheckForTextContent(Result, Text, TextPos, TextBlockStart, TextBlockEnd);
+
       Inc(TextPos, 2);
 
       NodeName := ScanForName(Text, TextPos);
@@ -959,9 +1101,14 @@ begin
     // Start of child node.
     if Text[TextPos] = '<' then
     begin
+      TextBlockEnd := TextPos;
+      CheckForTextContent(Result, Text, TextPos, TextBlockStart, TextBlockEnd);
+
       Inc(TextPos);
 
       ParseXMLNode(Result, Text, TextPos);
+      ResetTextContentScan(TextPos, TextBlockStart, TextBlockEnd);
+
       Continue;
     end;
 

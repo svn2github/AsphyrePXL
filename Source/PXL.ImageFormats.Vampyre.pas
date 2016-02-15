@@ -27,13 +27,6 @@ type
       const DestSurface: TPixelSurface; const AlphaFormatRequest: TAlphaFormatRequest): Boolean; override;
     function SaveToStream(const Context: Pointer; const Extension: StdString; const Stream: TStream;
       const SourceSurface: TPixelSurface; const Quality: Pointer): Boolean; override;
-{  private
-    class var FCurrent: TVampyreImageFormatHandler;
-    class destructor Finalize;
-  public
-    class procedure Allocate;
-    class procedure Release;
-    class property Current: TVampyreImageFormatHandler read FCurrent;}
   end;
 
 implementation
