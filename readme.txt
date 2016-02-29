@@ -43,12 +43,11 @@ and open "index.html". Alternatively, you can create a shortcut to this file
 on your desktop.
 
 Remember that this library and its source code are distributed under terms of
-GNU General Public License (GPL) version 3. By using this product, you
-acknowledge your consent to be bound by the terms of GPL.
+Mozilla Public License (MPL) version 2.0. By using this product, you
+acknowledge your consent to be bound by the terms of MPL.
 
 If you need to use this framework for a project with a different licensing
-requirements, such as a commercial closed-source project, please contact the
-author for a special license.
+requirements, feel free to contact the author for more options.
 
 -------------------------------------------------------------------------------
 Some of the included artwork was made by Humberto Andrade and is copyright
