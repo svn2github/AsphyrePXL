@@ -79,7 +79,7 @@ begin
   VersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVERSIONINFOEX);
 
   VersionInfoEx.dwMajorVersion := 6;
-  VersionInfoEx.dwMinorVersion := 0;
+  VersionInfoEx.dwMinorVersion := 1;
 
   ConditionMask := 0;
   ConditionMask := VerSetConditionMask(ConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
