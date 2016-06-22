@@ -129,10 +129,12 @@ end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
+  EngineTimer.Free;
   EngineFonts.Free;
   EngineImages.Free;
   EngineCanvas.Free;
   EngineDevice.Free;
+  DeviceProvider.Free;
   FMBridge.Free;
 end;
 
