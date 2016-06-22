@@ -5071,7 +5071,7 @@ end;
 
 function PointInRect(const Point: TPoint2; const Rect: TFloatRect): Boolean;
 begin
-  Result := (Point.X >= Rect.Left) and (Point.Y < Rect.Right) and (Point.Y >= Rect.Top) and (Point.Y < Rect.Bottom);
+  Result := (Point.X >= Rect.Left) and (Point.X < Rect.Right) and (Point.Y >= Rect.Top) and (Point.Y < Rect.Bottom);
 end;
 
 function RectInRect(const Rect1, Rect2: TFloatRect): Boolean;
