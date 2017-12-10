@@ -1,16 +1,16 @@
 unit PXL.Shaders.DX11;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -84,10 +84,10 @@ type
     function SetInt(const VariableName: StdString; const Value: LongInt; const SubIndex: Integer = 0): Boolean;
     function SetUInt(const VariableName: StdString; const Value: LongWord; const SubIndex: Integer = 0): Boolean;
     function SetFloat(const VariableName: StdString; const Value: Single; const SubIndex: Integer = 0): Boolean;
-    function SetPoint2(const VariableName: StdString; const Value: TPoint2; const SubIndex: Integer = 0): Boolean;
-    function SetVector3(const VariableName: StdString; const Value: TVector3; const SubIndex: Integer = 0): Boolean;
-    function SetVector4(const VariableName: StdString; const Value: TVector4; const SubIndex: Integer = 0): Boolean;
-    function SetMatrix4(const VariableName: StdString; const Value: TMatrix4; const SubIndex: Integer = 0): Boolean;
+    function SetPoint2(const VariableName: StdString; const Value: TPoint2f; const SubIndex: Integer = 0): Boolean;
+    function SetVector3(const VariableName: StdString; const Value: TVector3f; const SubIndex: Integer = 0): Boolean;
+    function SetVector4(const VariableName: StdString; const Value: TVector4f; const SubIndex: Integer = 0): Boolean;
+    function SetMatrix4(const VariableName: StdString; const Value: TMatrix4f; const SubIndex: Integer = 0): Boolean;
 
     property Context: TDX11DeviceContext read FContext;
 
@@ -477,31 +477,31 @@ begin
   Result := SetBasicVariable(VariableName, @Value, SizeOf(Single), SubIndex);
 end;
 
-function TDX11ConstantBuffer.SetPoint2(const VariableName: StdString; const Value: TPoint2;
+function TDX11ConstantBuffer.SetPoint2(const VariableName: StdString; const Value: TPoint2f;
   const SubIndex: Integer): Boolean;
 begin
-  Result := SetBasicVariable(VariableName, @Value, SizeOf(TPoint2), SubIndex);
+  Result := SetBasicVariable(VariableName, @Value, SizeOf(TPoint2f), SubIndex);
 end;
 
-function TDX11ConstantBuffer.SetVector3(const VariableName: StdString; const Value: TVector3;
+function TDX11ConstantBuffer.SetVector3(const VariableName: StdString; const Value: TVector3f;
   const SubIndex: Integer): Boolean;
 begin
-  Result := SetBasicVariable(VariableName, @Value, SizeOf(TVector3), SubIndex);
+  Result := SetBasicVariable(VariableName, @Value, SizeOf(TVector3f), SubIndex);
 end;
 
-function TDX11ConstantBuffer.SetVector4(const VariableName: StdString; const Value: TVector4;
+function TDX11ConstantBuffer.SetVector4(const VariableName: StdString; const Value: TVector4f;
   const SubIndex: Integer): Boolean;
 begin
-  Result := SetBasicVariable(VariableName, @Value, SizeOf(TVector4), SubIndex);
+  Result := SetBasicVariable(VariableName, @Value, SizeOf(TVector4f), SubIndex);
 end;
 
-function TDX11ConstantBuffer.SetMatrix4(const VariableName: StdString; const Value: TMatrix4;
+function TDX11ConstantBuffer.SetMatrix4(const VariableName: StdString; const Value: TMatrix4f;
   const SubIndex: Integer): Boolean;
 var
-  Temp: TMatrix4;
+  Temp: TMatrix4f;
 begin
-  Temp := TransposeMtx4(Value);
-  Result := SetBasicVariable(VariableName, @Temp, SizeOf(TMatrix4), SubIndex);
+  Temp := Value.Transpose;
+  Result := SetBasicVariable(VariableName, @Temp, SizeOf(TMatrix4f), SubIndex);
 end;
 
 {$ENDREGION}

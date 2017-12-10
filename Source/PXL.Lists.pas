@@ -1,16 +1,16 @@
 unit PXL.Lists;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -91,10 +91,10 @@ type
 
     procedure InsertRepeatValue(const Value: TListInt; const Count: Integer);
 
-    procedure Shuffle(var RandomContext: TRandomContext);
-    procedure BestShuffle(var RandomContext: TRandomContext);
+    procedure Shuffle;
+    procedure BestShuffle;
     procedure RemoveDuplicates;
-    function GetRandomValue(var RandomContext: TRandomContext): TListInt;
+    function GetRandomValue: TListInt;
 
     // Returns text representation of the string e.g. "21, 7, 14, 10, 20".
     function ChainToString: StdString;
@@ -125,7 +125,7 @@ type
   public type
     PItem = ^TItem;
     TItem = record
-      Point: TPoint2px;
+      Point: TPoint2i;
       Data: Pointer;
     end;
 
@@ -150,22 +150,22 @@ type
     function GetMemAddr: Pointer;
     procedure Request(const NeedCapacity: Integer);
     function GetItem(const Index: Integer): PItem;
-    function GetPoint(const Index: Integer): PPoint2px;
+    function GetPoint(const Index: Integer): PPoint2i;
     procedure SetCount(const NewCount: Integer);
   public
     constructor Create;
     destructor Destroy; override;
 
-    function Add(const Point: TPoint2px; const Data: Pointer = nil): Integer;
+    function Add(const Point: TPoint2i; const Data: Pointer = nil): Integer;
 
     procedure Remove(const Index: Integer);
     procedure Clear;
 
-    function IndexOf(const Point: TPoint2px): Integer;
+    function IndexOf(const Point: TPoint2i): Integer;
     function IndexOfData(const Data: Pointer): Integer;
 
-    procedure Include(const Point: TPoint2px; const Data: Pointer = nil);
-    procedure Exclude(const Point: TPoint2px);
+    procedure Include(const Point: TPoint2i; const Data: Pointer = nil);
+    procedure Exclude(const Point: TPoint2i);
 
     procedure CopyFrom(const Source: TPointList);
     procedure AddFrom(const Source: TPointList);
@@ -176,7 +176,7 @@ type
 
     property Count: Integer read FDataCount write SetCount;
     property Items[const Index: Integer]: PItem read GetItem; default;
-    property Point[const Index: Integer]: PPoint2px read GetPoint;
+    property Point[const Index: Integer]: PPoint2i read GetPoint;
   end;
 
   TIntRectList = class
@@ -342,10 +342,10 @@ type
     procedure CopyFrom(const Source: TIntegerProbabilityList);
     procedure AddFrom(const Source: TIntegerProbabilityList);
 
-    function ExtractRandomValue(var RandomContext: TRandomContext): TListInt;
+    function ExtractRandomValue: TListInt;
     procedure NormalizeProbabilities;
 
-    function GetRandomValue(var RandomContext: TRandomContext): TListInt;
+    function GetRandomValue: TListInt;
 
     procedure SaveToStream(const Stream: TStream);
     procedure LoadFromStream(const Stream: TStream);
@@ -367,21 +367,21 @@ type
     private
       {$IFDEF AUTOREFCOUNT}[weak]{$ENDIF} FList: TPoints2px;
       FIndex: Integer;
-      function GetCurrent: PPoint2px;
+      function GetCurrent: PPoint2i;
     public
       constructor Create(const AList: TPoints2px);
       destructor Destroy; override;
       function MoveNext: Boolean;
-      property Current: PPoint2px read GetCurrent;
+      property Current: PPoint2i read GetCurrent;
     end;
   private const
     ListGrowIncrement = 60;
     ListGrowFraction = 4;
   private
-    FData: array of TPoint2px;
+    FData: array of TPoint2i;
     FDataCount: Integer;
 
-    function GetItem(const Index: Integer): PPoint2px;
+    function GetItem(const Index: Integer): PPoint2i;
     procedure Request(const NeedCapacity: Integer);
     procedure SetCount(const NewCount: Integer);
     function GetMemAddr: Pointer;
@@ -389,26 +389,26 @@ type
     constructor Create;
     destructor Destroy; override;
 
-    function Add(const Point: TPoint2px): Integer;
+    function Add(const Point: TPoint2i): Integer;
 
     procedure Remove(const Index: Integer);
     procedure Clear;
 
-    function IndexOf(const Point: TPoint2px): Integer;
+    function IndexOf(const Point: TPoint2i): Integer;
 
-    procedure Include(const Point: TPoint2px);
-    procedure Exclude(const Point: TPoint2px);
+    procedure Include(const Point: TPoint2i);
+    procedure Exclude(const Point: TPoint2i);
 
     procedure CopyFrom(const Source: TPoints2px);
     procedure AddFrom(const Source: TPoints2px);
-    procedure AddFromPtr(const Source: PPoint2px; const ElementCount: Integer);
+    procedure AddFromPtr(const Source: PPoint2i; const ElementCount: Integer);
 
     function GetEnumerator: TEnumerator;
 
     property MemAddr: Pointer read GetMemAddr;
 
     property Count: Integer read FDataCount write SetCount;
-    property Items[const Index: Integer]: PPoint2px read GetItem; default;
+    property Items[const Index: Integer]: PPoint2i read GetItem; default;
   end;
 
   TPoints2 = class
@@ -417,48 +417,48 @@ type
     private
       {$IFDEF AUTOREFCOUNT}[weak]{$ENDIF} FList: TPoints2;
       FIndex: Integer;
-      function GetCurrent: PPoint2;
+      function GetCurrent: PPoint2f;
     public
       constructor Create(const AList: TPoints2);
       destructor Destroy; override;
       function MoveNext: Boolean;
-      property Current: PPoint2 read GetCurrent;
+      property Current: PPoint2f read GetCurrent;
     end;
   private const
     ListGrowIncrement = 60;
     ListGrowFraction = 4;
   private
-    FData: array of TPoint2;
+    FData: array of TPoint2f;
     FDataCount: Integer;
 
     procedure SetCount(const NewCount: Integer);
-    function GetItem(const Index: Integer): PPoint2;
+    function GetItem(const Index: Integer): PPoint2f;
     procedure Request(const NeedCapacity: Integer);
     function GetMemAddr: Pointer;
   public
     constructor Create;
     destructor Destroy; override;
 
-    function Add(const Point: TPoint2): Integer;
+    function Add(const Point: TPoint2f): Integer;
 
     procedure Remove(const Index: Integer);
     procedure Clear;
 
-    function IndexOf(const Point: TPoint2): Integer;
+    function IndexOf(const Point: TPoint2f): Integer;
 
-    procedure Include(const Point: TPoint2);
-    procedure Exclude(const Point: TPoint2);
+    procedure Include(const Point: TPoint2f);
+    procedure Exclude(const Point: TPoint2f);
 
     procedure CopyFrom(const Source: TPoints2);
     procedure AddFrom(const Source: TPoints2);
-    procedure AddFromPtr(const Source: PPoint2; const ElementCount: Integer);
+    procedure AddFromPtr(const Source: PPoint2f; const ElementCount: Integer);
 
     function GetEnumerator: TEnumerator;
 
     property MemAddr: Pointer read GetMemAddr;
 
     property Count: Integer read FDataCount write SetCount;
-    property Items[const Index: Integer]: PPoint2 read GetItem; default;
+    property Items[const Index: Integer]: PPoint2f read GetItem; default;
   end;
 
   TVectors3 = class
@@ -467,47 +467,47 @@ type
     private
       {$IFDEF AUTOREFCOUNT}[weak]{$ENDIF} FList: TVectors3;
       FIndex: Integer;
-      function GetCurrent: PVector3;
+      function GetCurrent: PVector3f;
     public
       constructor Create(const AList: TVectors3);
       destructor Destroy; override;
       function MoveNext: Boolean;
-      property Current: PVector3 read GetCurrent;
+      property Current: PVector3f read GetCurrent;
     end;
   private const
     ListGrowIncrement = 80;
     ListGrowFraction = 4;
   private
-    FData: array of TVector3;
+    FData: array of TVector3f;
     FDataCount: Integer;
 
     procedure SetCount(const NewCount: Integer);
-    function GetItem(const Index: Integer): PVector3;
+    function GetItem(const Index: Integer): PVector3f;
     procedure Request(const NeedCapacity: Integer);
     function GetMemAddr: Pointer;
   public
     constructor Create;
     destructor Destroy; override;
 
-    function Add(const Vector: TVector3): Integer;
-    function IndexOf(const Vector: TVector3): Integer;
+    function Add(const Vector: TVector3f): Integer;
+    function IndexOf(const Vector: TVector3f): Integer;
 
     procedure Remove(const Index: Integer);
     procedure Clear;
 
-    procedure Include(const Vector: TVector3);
-    procedure Exclude(const Vector: TVector3);
+    procedure Include(const Vector: TVector3f);
+    procedure Exclude(const Vector: TVector3f);
 
     procedure CopyFrom(const Source: TVectors3);
     procedure AddFrom(const Source: TVectors3);
-    procedure AddFromPtr(const Source: PVector3; const ElementCount: Integer);
+    procedure AddFromPtr(const Source: PVector3f; const ElementCount: Integer);
 
     function GetEnumerator: TEnumerator;
 
     property MemAddr: Pointer read GetMemAddr;
 
     property Count: Integer read FDataCount write SetCount;
-    property Items[const Index: Integer]: PVector3 read GetItem; default;
+    property Items[const Index: Integer]: PVector3f read GetItem; default;
   end;
 
   TVectors4 = class
@@ -516,36 +516,36 @@ type
     private
       {$IFDEF AUTOREFCOUNT}[weak]{$ENDIF} FList: TVectors4;
       FIndex: Integer;
-      function GetCurrent: PVector4;
+      function GetCurrent: PVector4f;
     public
       constructor Create(const AList: TVectors4);
       destructor Destroy; override;
       function MoveNext: Boolean;
-      property Current: PVector4 read GetCurrent;
+      property Current: PVector4f read GetCurrent;
     end;
   private const
     ListGrowIncrement = 120;
     ListGrowFraction = 4;
   private
-    FData: array of TVector4;
+    FData: array of TVector4f;
     FDataCount: Integer;
 
     function GetMemAddr: Pointer;
     procedure SetCount(const NewCount: Integer);
     procedure Request(const NeedCapacity: Integer);
-    function GetItem(const Index: Integer): PVector4;
+    function GetItem(const Index: Integer): PVector4f;
   public
     constructor Create;
     destructor Destroy; override;
 
-    function Add(const Vector: TVector4): Integer;
-    function IndexOf(const Vector: TVector4): Integer;
+    function Add(const Vector: TVector4f): Integer;
+    function IndexOf(const Vector: TVector4f): Integer;
 
     procedure Remove(const Index: Integer);
     procedure Clear;
 
-    procedure Include(const Vector: TVector4);
-    procedure Exclude(const Vector: TVector4);
+    procedure Include(const Vector: TVector4f);
+    procedure Exclude(const Vector: TVector4f);
 
     procedure CopyFrom(const Source: TVectors4);
     procedure AddFrom(const Source: TVectors4);
@@ -555,7 +555,7 @@ type
     property MemAddr: Pointer read GetMemAddr;
 
     property Count: Integer read FDataCount write SetCount;
-    property Items[const Index: Integer]: PVector4 read GetItem; default;
+    property Items[const Index: Integer]: PVector4f read GetItem; default;
   end;
 
 implementation
@@ -793,7 +793,7 @@ begin
   Result := IndexOf(Value) <> -1;
 end;
 
-procedure TIntegerList.BestShuffle(var RandomContext: TRandomContext);
+procedure TIntegerList.BestShuffle;
 var
   TempList: TIntegerList;
   Index: Integer;
@@ -805,7 +805,7 @@ begin
 
     while TempList.Count > 0 do
     begin
-      Index := RandomContext.GetValue(TempList.Count);
+      Index := Random(TempList.Count);
       Add(TempList[Index]);
       TempList.Remove(Index);
     end;
@@ -814,12 +814,12 @@ begin
   end;
 end;
 
-procedure TIntegerList.Shuffle(var RandomContext: TRandomContext);
+procedure TIntegerList.Shuffle;
 var
   I: Integer;
 begin
   for I := FDataCount - 1 downto 1 do
-    ListSwap(I, RandomContext.GetValue(I + 1));
+    ListSwap(I, Random(I + 1));
 end;
 
 procedure TIntegerList.Series(const NumCount: Integer);
@@ -889,10 +889,10 @@ begin
     Result := Min(Result, FData[I]);
 end;
 
-function TIntegerList.GetRandomValue(var RandomContext: TRandomContext): TListInt;
+function TIntegerList.GetRandomValue: TListInt;
 begin
   if FDataCount > 0 then
-    Result := FData[RandomContext.GetValue(FDataCount)]
+    Result := FData[Random(FDataCount)]
   else
     Result := 0;
 end;
@@ -1151,7 +1151,7 @@ begin
     Result := nil;
 end;
 
-function TPointList.GetPoint(const Index: Integer): PPoint2px;
+function TPointList.GetPoint(const Index: Integer): PPoint2i;
 begin
   if (Index >= 0) and (Index < FDataCount) then
     Result := @FData[Index].Point
@@ -1190,7 +1190,7 @@ begin
     Clear;
 end;
 
-function TPointList.Add(const Point: TPoint2px; const Data: Pointer): Integer;
+function TPointList.Add(const Point: TPoint2i; const Data: Pointer): Integer;
 var
   Index: Integer;
 begin
@@ -1223,7 +1223,7 @@ begin
   FDataCount := 0;
 end;
 
-function TPointList.IndexOf(const Point: TPoint2px): Integer;
+function TPointList.IndexOf(const Point: TPoint2i): Integer;
 var
   I: Integer;
 begin
@@ -1251,13 +1251,13 @@ begin
     end;
 end;
 
-procedure TPointList.Include(const Point: TPoint2px; const Data: Pointer);
+procedure TPointList.Include(const Point: TPoint2i; const Data: Pointer);
 begin
   if IndexOf(Point) = -1 then
     Add(Point, Data);
 end;
 
-procedure TPointList.Exclude(const Point: TPoint2px);
+procedure TPointList.Exclude(const Point: TPoint2i);
 begin
   Remove(IndexOf(Point));
 end;
@@ -1886,7 +1886,7 @@ begin
   end;
 end;
 
-function TIntegerProbabilityList.GetRandomValue(var RandomContext: TRandomContext): TListInt;
+function TIntegerProbabilityList.GetRandomValue: TListInt;
 var
   Sample, SampleMax, SampleIn: VectorFloat;
   I: Integer;
@@ -1900,7 +1900,7 @@ begin
   for I := 0 to FDataCount - 1 do
     SampleMax := SampleMax + FData[I].Probability;
 
-  Sample := RandomContext.GetValue * SampleMax;
+  Sample := Random * SampleMax;
 
   SampleIn := 0;
   for I := 0 to FDataCount - 1 do
@@ -1912,7 +1912,7 @@ begin
   end;
 end;
 
-function TIntegerProbabilityList.ExtractRandomValue(var RandomContext: TRandomContext): TListInt;
+function TIntegerProbabilityList.ExtractRandomValue: TListInt;
 var
   Sample, SampleMax, SampleIn: VectorFloat;
   I, SampleNo: Integer;
@@ -1926,7 +1926,7 @@ begin
   for I := 0 to FDataCount - 1 do
     SampleMax := SampleMax + FData[I].Probability;
 
-  Sample := RandomContext.GetValue * SampleMax;
+  Sample := Random * SampleMax;
 
   SampleIn := 0.0;
   SampleNo := -1;
@@ -2039,7 +2039,7 @@ begin
   inherited;
 end;
 
-function TPoints2px.TEnumerator.GetCurrent: PPoint2px;
+function TPoints2px.TEnumerator.GetCurrent: PPoint2i;
 begin
   Result := FList[FIndex];
 end;
@@ -2074,7 +2074,7 @@ begin
     Result := nil;
 end;
 
-function TPoints2px.GetItem(const Index: Integer): PPoint2px;
+function TPoints2px.GetItem(const Index: Integer): PPoint2i;
 begin
   if (Index >= 0) and (Index < FDataCount) then
     Result := @FData[Index]
@@ -2113,7 +2113,7 @@ begin
     Clear;
 end;
 
-function TPoints2px.Add(const Point: TPoint2px): Integer;
+function TPoints2px.Add(const Point: TPoint2i): Integer;
 var
   Index: Integer;
 begin
@@ -2126,7 +2126,7 @@ begin
   Result := Index;
 end;
 
-function TPoints2px.IndexOf(const Point: TPoint2px): Integer;
+function TPoints2px.IndexOf(const Point: TPoint2i): Integer;
 var
   I: Integer;
 begin
@@ -2158,13 +2158,13 @@ begin
   FDataCount := 0;
 end;
 
-procedure TPoints2px.Include(const Point: TPoint2px);
+procedure TPoints2px.Include(const Point: TPoint2i);
 begin
   if IndexOf(Point) = -1 then
     Add(Point);
 end;
 
-procedure TPoints2px.Exclude(const Point: TPoint2px);
+procedure TPoints2px.Exclude(const Point: TPoint2i);
 begin
   Remove(IndexOf(Point));
 end;
@@ -2193,10 +2193,10 @@ begin
   Inc(FDataCount, Source.FDataCount);
 end;
 
-procedure TPoints2px.AddFromPtr(const Source: PPoint2px; const ElementCount: Integer);
+procedure TPoints2px.AddFromPtr(const Source: PPoint2i; const ElementCount: Integer);
 var
   I: Integer;
-  SourceValue: PPoint2px;
+  SourceValue: PPoint2i;
 begin
   Request(FDataCount + ElementCount);
 
@@ -2236,7 +2236,7 @@ begin
   inherited;
 end;
 
-function TPoints2.TEnumerator.GetCurrent: PPoint2;
+function TPoints2.TEnumerator.GetCurrent: PPoint2f;
 begin
   Result := FList[FIndex];
 end;
@@ -2291,7 +2291,7 @@ begin
   end;
 end;
 
-function TPoints2.GetItem(const Index: Integer): PPoint2;
+function TPoints2.GetItem(const Index: Integer): PPoint2f;
 begin
   if (Index >= 0) and (Index < FDataCount) then
     Result := @FData[Index]
@@ -2310,7 +2310,7 @@ begin
     Clear;
 end;
 
-function TPoints2.Add(const Point: TPoint2): Integer;
+function TPoints2.Add(const Point: TPoint2f): Integer;
 var
   Index: Integer;
 begin
@@ -2341,7 +2341,7 @@ begin
   FDataCount := 0;
 end;
 
-function TPoints2.IndexOf(const Point: TPoint2): Integer;
+function TPoints2.IndexOf(const Point: TPoint2f): Integer;
 var
   I: Integer;
 begin
@@ -2355,13 +2355,13 @@ begin
     end;
 end;
 
-procedure TPoints2.Include(const Point: TPoint2);
+procedure TPoints2.Include(const Point: TPoint2f);
 begin
   if IndexOf(Point) = -1 then
     Add(Point);
 end;
 
-procedure TPoints2.Exclude(const Point: TPoint2);
+procedure TPoints2.Exclude(const Point: TPoint2f);
 begin
   Remove(IndexOf(Point));
 end;
@@ -2390,10 +2390,10 @@ begin
   Inc(FDataCount, Source.FDataCount);
 end;
 
-procedure TPoints2.AddFromPtr(const Source: PPoint2; const ElementCount: Integer);
+procedure TPoints2.AddFromPtr(const Source: PPoint2f; const ElementCount: Integer);
 var
   I: Integer;
-  SourceValue: PPoint2;
+  SourceValue: PPoint2f;
 begin
   Request(FDataCount + ElementCount);
 
@@ -2433,7 +2433,7 @@ begin
   inherited;
 end;
 
-function TVectors3.TEnumerator.GetCurrent: PVector3;
+function TVectors3.TEnumerator.GetCurrent: PVector3f;
 begin
   Result := FList[FIndex];
 end;
@@ -2479,7 +2479,7 @@ begin
     Clear;
 end;
 
-function TVectors3.GetItem(const Index: Integer): PVector3;
+function TVectors3.GetItem(const Index: Integer): PVector3f;
 begin
   if (Index >= 0) and (Index < FDataCount) then
     Result := @FData[Index]
@@ -2507,7 +2507,7 @@ begin
   end;
 end;
 
-function TVectors3.Add(const Vector: TVector3): Integer;
+function TVectors3.Add(const Vector: TVector3f): Integer;
 var
   Index: Integer;
 begin
@@ -2538,7 +2538,7 @@ begin
   FDataCount := 0;
 end;
 
-function TVectors3.IndexOf(const Vector: TVector3): Integer;
+function TVectors3.IndexOf(const Vector: TVector3f): Integer;
 var
   I: Integer;
 begin
@@ -2552,13 +2552,13 @@ begin
     end;
 end;
 
-procedure TVectors3.Include(const Vector: TVector3);
+procedure TVectors3.Include(const Vector: TVector3f);
 begin
   if IndexOf(Vector) = -1 then
     Add(Vector);
 end;
 
-procedure TVectors3.Exclude(const Vector: TVector3);
+procedure TVectors3.Exclude(const Vector: TVector3f);
 begin
   Remove(IndexOf(Vector));
 end;
@@ -2587,10 +2587,10 @@ begin
   Inc(FDataCount, Source.FDataCount);
 end;
 
-procedure TVectors3.AddFromPtr(const Source: PVector3; const ElementCount: Integer);
+procedure TVectors3.AddFromPtr(const Source: PVector3f; const ElementCount: Integer);
 var
   I: Integer;
-  SourceValue: PVector3;
+  SourceValue: PVector3f;
 begin
   Request(FDataCount + ElementCount);
 
@@ -2630,7 +2630,7 @@ begin
   inherited;
 end;
 
-function TVectors4.TEnumerator.GetCurrent: PVector4;
+function TVectors4.TEnumerator.GetCurrent: PVector4f;
 begin
   Result := FList[FIndex];
 end;
@@ -2684,7 +2684,7 @@ begin
   end;
 end;
 
-function TVectors4.GetItem(const Index: Integer): PVector4;
+function TVectors4.GetItem(const Index: Integer): PVector4f;
 begin
   if (Index >= 0) and (Index < FDataCount) then
     Result := @FData[Index]
@@ -2703,7 +2703,7 @@ begin
     Clear;
 end;
 
-function TVectors4.Add(const Vector: TVector4): Integer;
+function TVectors4.Add(const Vector: TVector4f): Integer;
 var
   Index: Integer;
 begin
@@ -2734,7 +2734,7 @@ begin
   FDataCount := 0;
 end;
 
-function TVectors4.IndexOf(const Vector: TVector4): Integer;
+function TVectors4.IndexOf(const Vector: TVector4f): Integer;
 var
   I: Integer;
 begin
@@ -2748,13 +2748,13 @@ begin
     end;
 end;
 
-procedure TVectors4.Include(const Vector: TVector4);
+procedure TVectors4.Include(const Vector: TVector4f);
 begin
   if IndexOf(Vector) = -1 then
     Add(Vector);
 end;
 
-procedure TVectors4.Exclude(const Vector: TVector4);
+procedure TVectors4.Exclude(const Vector: TVector4f);
 begin
   Remove(IndexOf(Vector));
 end;

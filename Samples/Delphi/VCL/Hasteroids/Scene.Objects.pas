@@ -1,16 +1,16 @@
 unit Scene.Objects;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -27,7 +27,7 @@ type
     fades after some amount of time. }
   TStar = class(TParticleEx)
   protected
-    procedure ExRender(const Pt: TPoint2px); override;
+    procedure ExRender(const Pt: TPoint2i); override;
   public
     constructor Create(const AOwner: TParticles); reintroduce;
   end;
@@ -39,7 +39,7 @@ type
     FFontIndex: Integer;
     FSize: Integer;
   protected
-    procedure ExRender(const Pt: TPoint2px); override;
+    procedure ExRender(const Pt: TPoint2i); override;
   public
     constructor Create(const AOwner: TParticles; const Text: StdString; const FontIndex, X, Y, Size: Integer;
       const Color: TIntColor); reintroduce;
@@ -180,10 +180,10 @@ begin
   inherited Create(AOwner, StarOrderIndex);
 
   // set random position
-  IntPos := Point2px(Random(ScreenWidth), Random(ScreenHeight));
+  IntPos := Point2i(Random(ScreenWidth), Random(ScreenHeight));
 
   // one-pixel dimensions
-  RenderSize := Point2px(1, 1);
+  RenderSize := Point2i(1, 1);
 
   // maximum star duration
   MaxRange := 32 + (32 * Random(8));
@@ -192,7 +192,7 @@ begin
   Diffuse := StarColors[Random(4)];
 end;
 
-procedure TStar.ExRender(const Pt: TPoint2px);
+procedure TStar.ExRender(const Pt: TPoint2i);
 var
   Alpha: Integer;
 begin
@@ -227,13 +227,13 @@ begin
   end;
 
   // centered position
-  IntPos := Point2px(X - (RenderSize.X div 2), Y - (RenderSize.Y div 2));
+  IntPos := Point2i(X - (RenderSize.X div 2), Y - (RenderSize.Y div 2));
 
   // text duration
   MaxRange := 128 + (Random(16) * 8);
 end;
 
-procedure TText.ExRender(const Pt: TPoint2px);
+procedure TText.ExRender(const Pt: TPoint2i);
 var
   Alpha: Integer;
   Font: TBitmapFont;
@@ -262,7 +262,7 @@ constructor TSpaceObject.Create(const AOwner: TBaseObjects);
 begin
   inherited;
 
-  IntPos := Point2px(Random(ScreenWidth), Random(ScreenHeight));
+  IntPos := Point2i(Random(ScreenWidth), Random(ScreenHeight));
   Angle := Random * Pi * 2;
   FImageIndex := -1;
   FSize := 256;
@@ -273,7 +273,7 @@ end;
 procedure TSpaceObject.Move;
 var
   Image: TAtlasImage;
-  VisibleSize: TPoint2px;
+  VisibleSize: TPoint2i;
   LSize, LX, LY: VectorFloat;
 begin
   Image := EngineImages[ImageIndex];
@@ -297,7 +297,7 @@ begin
     if LY > ScreenHeight + (LSize / 2.0) then
       LY := LY - ScreenHeight - LSize;
 
-    Position := Point2(LX, LY);
+    Position := Point2f(LX, LY);
   end;
 
   inherited Move;
@@ -329,7 +329,7 @@ end;
 procedure TSpaceObject.Render(const Tag: TObject);
 var
   Image: TAtlasImage;
-  VisibleSize: TPoint2px;
+  VisibleSize: TPoint2i;
   LWidth, LHeight: Integer;
 begin
   Image := EngineImages[ImageIndex];
@@ -342,7 +342,7 @@ begin
   LHeight := (VisibleSize.Y * Size) div 256;
 
   EngineCanvas.UseImageRegion(Image, Pattern);
-  EngineCanvas.TexQuad(FloatRect4R(IntPos, Point2(LWidth, LHeight), Point2(LWidth * 0.5, LHeight * 0.5), Angle),
+  EngineCanvas.TexQuad(TQuad.Rotated(IntPos, Point2f(LWidth, LHeight), Point2f(LWidth * 0.5, LHeight * 0.5), Angle),
     FDiffuse, FEffect);
 end;
 
@@ -360,7 +360,7 @@ constructor TShip.Create(const AOwner: TBaseObjects);
 begin
   inherited;
 
-  IntPos := Point2px(ScreenWidth div 2, ScreenHeight div 2);
+  IntPos := Point2i(ScreenWidth div 2, ScreenHeight div 2);
   ImageIndex := ImageShip;
   EngineSmoke := 3;
   CollideRadius := 24;
@@ -404,7 +404,7 @@ begin
   Alpha := ((8 - Pattern) * Pi) / 16;
 
   // accelerate
-  Velocity := Point2(Velocity.X + (Cos(Alpha) * AccelFactor), Velocity.Y + (Sin(Alpha) * AccelFactor));
+  Velocity := Point2f(Velocity.X + (Cos(Alpha) * AccelFactor), Velocity.Y + (Sin(Alpha) * AccelFactor));
 
   // certain brake - to limit the speed
   Velocity := Velocity * ResistFactor;
@@ -437,7 +437,7 @@ end;
 procedure TShip.Render(const Tag: TObject);
 var
   Image: TAtlasImage;
-  VisibleSize: TPoint2px;
+  VisibleSize: TPoint2i;
   Left, Top, Width, Height: Integer;
 begin
   // retreive the Image
@@ -455,7 +455,7 @@ begin
 
   // render the Image
   EngineCanvas.UseImageRegion(Image, Pattern);
-  EngineCanvas.TexQuad(FloatRect4(Left, Top, Width, Height), IntColorWhite4);
+  EngineCanvas.TexQuad(Quad(Left, Top, Width, Height), ColorRectWhite);
 end;
 
 procedure TShip.SetWeaponIndex(const Value: Integer);
@@ -496,18 +496,18 @@ begin
       begin
         Bullet := TBullet.Create(Owner);
         Bullet.Range := BulletRange;
-        Bullet.Position := Point2(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
+        Bullet.Position := Point2f(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
           ShipCoords[Pattern, I].Y - 32);
-        Bullet.Velocity := Point2(Velocity.X + (Cos(Alpha) * BulletSpeed), Velocity.Y + (Sin(Alpha) * BulletSpeed));
+        Bullet.Velocity := Point2f(Velocity.X + (Cos(Alpha) * BulletSpeed), Velocity.Y + (Sin(Alpha) * BulletSpeed));
         Bullet.Diffuse := $9FFF0000;
       end;
       1:
       begin
         Bullet := TBullet.Create(Owner);
         Bullet.Range := Trunc(BulletRange * 1.2);
-        Bullet.Position := Point2(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
+        Bullet.Position := Point2f(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
           ShipCoords[Pattern, I].Y - 32);
-        Bullet.Velocity := Point2(Velocity.X + (Cos(Alpha) * BulletSpeed * 1.1), Velocity.Y +
+        Bullet.Velocity := Point2f(Velocity.X + (Cos(Alpha) * BulletSpeed * 1.1), Velocity.Y +
           (Sin(Alpha) * BulletSpeed * 1.1));
         Bullet.Diffuse := $9FFF3F7F;
       end;
@@ -515,17 +515,17 @@ begin
       begin
         Bullet := TBullet.Create(Owner);
         Bullet.Range := Trunc(BulletRange * 0.75);
-        Bullet.Position := Point2(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
+        Bullet.Position := Point2f(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
           ShipCoords[Pattern, I].Y - 32);
-        Bullet.Velocity := Point2(Velocity.X + (Cos(Alpha - Beta) * BulletSpeed * 0.8), Velocity.Y +
+        Bullet.Velocity := Point2f(Velocity.X + (Cos(Alpha - Beta) * BulletSpeed * 0.8), Velocity.Y +
           (Sin(Alpha - Beta) * BulletSpeed * 0.8));
         Bullet.Diffuse := $9F00FF00;
 
         Bullet := TBullet.Create(Owner);
         Bullet.Range := Trunc(BulletRange * 0.75);
-        Bullet.Position := Point2(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
+        Bullet.Position := Point2f(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
           ShipCoords[Pattern, I].Y - 32);
-        Bullet.Velocity := Point2(Velocity.X + (Cos(Alpha + Beta) * BulletSpeed * 0.8), Velocity.Y +
+        Bullet.Velocity := Point2f(Velocity.X + (Cos(Alpha + Beta) * BulletSpeed * 0.8), Velocity.Y +
           (Sin(Alpha + Beta) * BulletSpeed * 0.8));
         Bullet.Diffuse := $9F00FF00;
       end;
@@ -543,9 +543,9 @@ begin
 
         Bullet := TBullet.Create(Owner);
         Bullet.Range := Trunc(BulletRange * Theta);
-        Bullet.Position := Point2(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
+        Bullet.Position := Point2f(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
           ShipCoords[Pattern, I].Y - 32);
-        Bullet.Velocity := Point2(Velocity.X + (Cos(Alpha - Beta) * BulletSpeed * Theta), Velocity.Y +
+        Bullet.Velocity := Point2f(Velocity.X + (Cos(Alpha - Beta) * BulletSpeed * Theta), Velocity.Y +
           (Sin(Alpha - Beta) * BulletSpeed * Theta));
         Bullet.Diffuse := BulletColor;
 
@@ -559,9 +559,9 @@ begin
 
         Bullet := TBullet.Create(Owner);
         Bullet.Range := Trunc(BulletRange * Theta);
-        Bullet.Position := Point2(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
+        Bullet.Position := Point2f(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
           ShipCoords[Pattern, I].Y - 32);
-        Bullet.Velocity := Point2(Velocity.X + (Cos(Alpha + Beta) * BulletSpeed * Theta), Velocity.Y +
+        Bullet.Velocity := Point2f(Velocity.X + (Cos(Alpha + Beta) * BulletSpeed * Theta), Velocity.Y +
           (Sin(Alpha + Beta) * BulletSpeed * Theta));
         Bullet.Diffuse := BulletColor;
       end;
@@ -588,9 +588,9 @@ begin
 
           Bullet := TBullet.Create(Owner);
           Bullet.Range := Trunc(BulletRange * (1 / Theta));
-          Bullet.Position := Point2(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
+          Bullet.Position := Point2f(Position.X + ShipCoords[Pattern, I].X - 32, Position.Y +
             ShipCoords[Pattern, I].Y - 32);
-          Bullet.Velocity := Point2(Velocity.X + (Cos(Alpha - Beta) * BulletSpeed * Theta), Velocity.Y +
+          Bullet.Velocity := Point2f(Velocity.X + (Cos(Alpha - Beta) * BulletSpeed * Theta), Velocity.Y +
             (Sin(Alpha - Beta) * BulletSpeed * Theta));
           Bullet.Diffuse := BulletColor;
           Beta := Beta + BetaInc;
@@ -609,7 +609,7 @@ end;
 
 procedure TShip.ObjectCollide(const DestObj: TBaseObject);
 begin
-  Velocity := Point2(Velocity.X + DestObj.Velocity.X, Velocity.Y + DestObj.Velocity.Y);
+  Velocity := Point2f(Velocity.X + DestObj.Velocity.X, Velocity.Y + DestObj.Velocity.Y);
   Brake;
 
   Dec(FArmour);
@@ -631,7 +631,7 @@ begin
   inherited;
 
   ImageIndex := ImageRock;
-  Velocity := Point2((Random * 8) - 4.0, (Random * 8) - 4.0);
+  Velocity := Point2f((Random * 8) - 4.0, (Random * 8) - 4.0);
 
   AnimDelta := 1;
   if Random(2) = 0 then
@@ -674,8 +674,8 @@ begin
   LSize := (FSize * 192) div 256;
 
   Particle := PEngine2.CreateParticleEx(ImageExplode, IntPos.X, IntPos.Y, 64, TBlendingEffect.Add);
-  Particle.RenderSize := Point2px(LSize, LSize);
-  Particle.RotMiddle := Point2px(LSize div 2, LSize div 2);
+  Particle.RenderSize := Point2i(LSize, LSize);
+  Particle.RotMiddle := Point2i(LSize div 2, LSize div 2);
 
   if (FSize > 64) and (FScore > 1) then
   begin
@@ -687,7 +687,7 @@ begin
     begin
       Piece := TAsteroid.Create(Owner);
       Piece.Size := (FSize * 2) div 3;
-      Piece.Position := Point2(Position.X, Position.Y);
+      Piece.Position := Point2f(Position.X, Position.Y);
       Piece.Score := Score - 1;
     end;
   end;
@@ -701,7 +701,7 @@ begin
 
   Text := TText.Create(PEngine2, TextContent, 1, IntPos.X, IntPos.Y + 24, 256, $FFFFE000);
   Text.MaxRange := 48;
-  Text.Velocity := Point2(Random - 0.5, Random - 1.5);
+  Text.Velocity := Point2f(Random - 0.5, Random - 1.5);
 
   TShip(Owner.Objects[ShipID]).Score := TShip(Owner.Objects[ShipID]).Score + FScore;
   PlaySample(EffectSamples[1], 50);

@@ -1,16 +1,16 @@
 unit Engine.Objects;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -30,8 +30,8 @@ type
     FID: Integer;
     FNext: TBaseObject;
     FPrev: TBaseObject;
-    FPosition: TPoint2;
-    FVelocity: TPoint2;
+    FPosition: TPoint2f;
+    FVelocity: TPoint2f;
     FOwner: TBaseObjects;
     FDying: Boolean;
     FCollideRadius: Integer;
@@ -42,10 +42,10 @@ type
     procedure SetPrev(const Value: TBaseObject);
     procedure SetNext(const Value: TBaseObject);
     procedure SetDying(const Value: Boolean);
-    procedure SetPosition(const Value: TPoint2);
-    procedure SetVelocity(const Value: TPoint2);
-    function GetIntPos: TPoint2px; inline;
-    procedure SetIntPos(const Value: TPoint2px); inline;
+    procedure SetPosition(const Value: TPoint2f);
+    procedure SetVelocity(const Value: TPoint2f);
+    function GetIntPos: TPoint2i; inline;
+    procedure SetIntPos(const Value: TPoint2i); inline;
     procedure ChangeID(const Value: Integer);
   protected
     // links previous and next objects leaving this object unconnected
@@ -91,11 +91,11 @@ type
     property Collided: Boolean read FCollided write FCollided;
 
     // object position vector
-    property Position: TPoint2 read FPosition write SetPosition;
-    property Velocity: TPoint2 read FVelocity write SetVelocity;
+    property Position: TPoint2f read FPosition write SetPosition;
+    property Velocity: TPoint2f read FVelocity write SetVelocity;
 
     // integer position
-    property IntPos: TPoint2px read GetIntPos write SetIntPos;
+    property IntPos: TPoint2i read GetIntPos write SetIntPos;
 
     // the rectangle object occupies in the space used for collision detection
     // NOTE: only applies if CollisionType is "cmRectangle"
@@ -270,24 +270,24 @@ begin
     FOwner.Insert(Self);
 end;
 
-procedure TBaseObject.SetPosition(const Value: TPoint2);
+procedure TBaseObject.SetPosition(const Value: TPoint2f);
 begin
   FPosition := Value;
   UpdatedPosition;
 end;
 
-procedure TBaseObject.SetVelocity(const Value: TPoint2);
+procedure TBaseObject.SetVelocity(const Value: TPoint2f);
 begin
   FVelocity := Value;
   UpdatedVelocity;
 end;
 
-function TBaseObject.GetIntPos: TPoint2px;
+function TBaseObject.GetIntPos: TPoint2i;
 begin
-  Result := Point2ToPx(FPosition);
+  Result := FPosition.ToInt;
 end;
 
-procedure TBaseObject.SetIntPos(const Value: TPoint2px);
+procedure TBaseObject.SetIntPos(const Value: TPoint2i);
 begin
   Position := Value;
 end;
@@ -623,7 +623,7 @@ begin
       if FCollideMethod = TCollideMethod.Distance then
         TooClose := (Delta < (ANode.CollideRadius + LNode.CollideRadius))
       else
-        TooClose := OverlapRect(ANode.CollideRect, LNode.CollideRect);
+        TooClose := ANode.CollideRect.Overlaps(LNode.CollideRect);
 
       if TooClose then
       begin

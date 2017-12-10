@@ -1,16 +1,16 @@
 unit MainFm;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 uses
@@ -31,7 +31,7 @@ type
     EngineFonts: TBitmapFonts;
     EngineTimer: TMultimediaTimer;
 
-    DisplaySize: TPoint2px;
+    DisplaySize: TPoint2i;
     EngineTicks: Integer;
     CacheStall: Integer;
 
@@ -64,7 +64,7 @@ begin
   DeviceProvider := CreateDefaultProvider;
   EngineDevice := DeviceProvider.CreateDevice as TCustomSwapChainDevice;
 
-  DisplaySize := Point2px(ClientWidth, ClientHeight);
+  DisplaySize := Point2i(ClientWidth, ClientHeight);
   EngineDevice.SwapChains.Add(Handle, DisplaySize, DefaultMultisamples);
 
   if not EngineDevice.Initialize then
@@ -113,7 +113,7 @@ end;
 
 procedure TMainForm.FormResize(Sender: TObject);
 begin
-  DisplaySize := Point2px(ClientWidth, ClientHeight);
+  DisplaySize := Point2i(ClientWidth, ClientHeight);
 
   if (EngineDevice <> nil) and (EngineTimer <> nil) and EngineDevice.Initialized then
   begin
@@ -161,30 +161,30 @@ end;
 
 procedure TMainForm.RenderScene;
 var
- HexMtx: TMatrix3;
+ HexMtx: TMatrix3f;
  Omega, Kappa: Single;
- HoleAt, HoleSize: TPoint2;
+ HoleAt, HoleSize: TPoint2f;
  I: Integer;
 begin
   // Draw gradient lines.
   for I := 0 to DisplaySize.Y div 20 do
     EngineCanvas.Line(
-      Point2(0.0, 0.0), Point2(DisplaySize.X, I * 20.0),
-      IntColor2($FF837256, $FF4E4433));
+      Point2f(0.0, 0.0), Point2f(DisplaySize.X, I * 20.0),
+      ColorPair($FF837256, $FF4E4433));
 
     for I := 0 to DisplaySize.X div 20 do
       EngineCanvas.Line(
-        Point2(0.0, 0.0), Point2(I * 20.0, DisplaySize.Y),
-        IntColor2($FF837256, $FF4E4433));
+        Point2f(0.0, 0.0), Point2f(I * 20.0, DisplaySize.Y),
+        ColorPair($FF837256, $FF4E4433));
 
   // Draw Hexagon.
   HexMtx :=
     // Make hexagon with dimensions of 50x50.
-    ScaleMtx3(Point2(50.0, 50.0)) *
+    TMatrix3f.Scale(50.0, 50.0) *
     // Rotate hexagon with time.
-    RotateMtx3(EngineTicks * 0.00371) *
+    TMatrix3f.Rotate(EngineTicks * 0.00371) *
     // Position hexagon at one quarter of screen.
-    TranslateMtx3(Point2(DisplaySize.X * 0.25, DisplaySize.Y * 0.25));
+    TMatrix3f.Translate(DisplaySize.X * 0.25, DisplaySize.Y * 0.25);
 
   EngineCanvas.FillHexagon(HexMtx, $00FF0000, $FFFFD728, $00FF0000, $FFFFD728, $00FF0000, $FFFFD728);
 
@@ -193,39 +193,39 @@ begin
   Kappa := 1.25 * Pi + Sin(EngineTicks * 0.01241) * 0.5 * Pi;
 
   EngineCanvas.FillArc(
-    Point2(DisplaySize.X * 0.75, DisplaySize.Y * 0.25),
-    Point2(70.0, 50.0), Omega, Omega + Kappa, 64,
-    IntColor4($FFA4E581, $FFFF9C00, $FF7728FF, $FFFFFFFF));
+    Point2f(DisplaySize.X * 0.75, DisplaySize.Y * 0.25),
+    Point2f(70.0, 50.0), Omega, Omega + Kappa, 64,
+    ColorRect($FFA4E581, $FFFF9C00, $FF7728FF, $FFFFFFFF));
 
   // Draw small Ribbon.
   Omega := EngineTicks * 0.01134;
   Kappa := 1.25 * Pi + Sin(EngineTicks * 0.014751) * 0.5 * Pi;
 
   EngineCanvas.FillRibbon(
-    Point2(DisplaySize.X * 0.25, DisplaySize.Y * 0.75),
-    Point2(25.0, 20.0), Point2(45.0, 40.0), Omega, Omega + Kappa, 64,
-    IntColor4($FFFF244F, $FFACFF0D, $FF2B98FF, $FF7B42FF));
+    Point2f(DisplaySize.X * 0.25, DisplaySize.Y * 0.75),
+    Point2f(25.0, 20.0), Point2f(45.0, 40.0), Omega, Omega + Kappa, 64,
+    ColorRect($FFFF244F, $FFACFF0D, $FF2B98FF, $FF7B42FF));
 
   // Draw large Ribbon.
   Omega := EngineTicks * 0.01721;
   Kappa := 1.25 * Pi + Sin(EngineTicks * 0.01042) * 0.5 * Pi;
 
   EngineCanvas.FillRibbon(
-    Point2(DisplaySize.X * 0.25, DisplaySize.Y * 0.75),
-    Point2(50.0, 45.0), Point2(70.0, 65.0),
+    Point2f(DisplaySize.X * 0.25, DisplaySize.Y * 0.75),
+    Point2f(50.0, 45.0), Point2f(70.0, 65.0),
     Omega, Omega + Kappa, 64,
     $FFFF244F, $FFACFF0D, $FF2B98FF, $FFA4E581, $FFFF9C00, $FF7728FF);
 
   // Draw hole with smooth internal border (using tape).
-  HoleAt := Point2(
+  HoleAt := Point2f(
    DisplaySize.X * 0.75 + Cos(EngineTicks * 0.00718) * DisplaySize.X * 0.15,
    DisplaySize.Y * 0.75 + Sin(EngineTicks * 0.00912) * DisplaySize.Y * 0.15);
 
-  HoleSize := Point2(40.0, 40.0);
+  HoleSize := Point2f(40.0, 40.0);
 
   EngineCanvas.QuadHole(
-    Point2(DisplaySize.X * 0.5, DisplaySize.Y * 0.5),
-    Point2(DisplaySize.X * 0.5, DisplaySize.Y * 0.5),
+    Point2f(DisplaySize.X * 0.5, DisplaySize.Y * 0.5),
+    Point2f(DisplaySize.X * 0.5, DisplaySize.Y * 0.5),
     HoleAt, HoleSize,
     $004E4433, $FFE4DED5, 64);
 
@@ -235,34 +235,34 @@ begin
 
   // Draw information text.
   EngineFonts[FontKristen].DrawTextCentered(
-    Point2ToPx(Point2(DisplaySize.X * 0.25, DisplaySize.Y * 0.25 + 70.0)),
+    Point2f(DisplaySize.X * 0.25, DisplaySize.Y * 0.25 + 70.0).ToInt,
     'Hexagon',
-    IntColor2($FFFFD25D, $FFFF0036));
+    ColorPair($FFFFD25D, $FFFF0036));
 
   EngineFonts[FontKristen].DrawTextCentered(
-    Point2ToPx(Point2(DisplaySize.X * 0.75, DisplaySize.Y * 0.25 + 70.0)),
+    Point2f(DisplaySize.X * 0.75, DisplaySize.Y * 0.25 + 70.0).ToInt,
     'Arc',
-    IntColor2($FFE5FF3B, $FF00FF00));
+    ColorPair($FFE5FF3B, $FF00FF00));
 
   EngineFonts[FontKristen].DrawTextCentered(
-    Point2ToPx(Point2(DisplaySize.X * 0.25, DisplaySize.Y * 0.75 + 80.0)),
+    Point2f(DisplaySize.X * 0.25, DisplaySize.Y * 0.75 + 80.0).ToInt,
     'Tapes',
-    IntColor2($FFEAFAFF, $FF7B42FF));
+    ColorPair($FFEAFAFF, $FF7B42FF));
 
   EngineFonts[FontKristen].DrawTextCentered(
-    Point2ToPx(Point2(DisplaySize.X * 0.75, DisplaySize.Y * 0.75 + 80.0)),
+    Point2f(DisplaySize.X * 0.75, DisplaySize.Y * 0.75 + 80.0).ToInt,
     'Hole + tape',
-    IntColor2($FFFFF4B3, $FFA9824C));
+    ColorPair($FFFFF4B3, $FFA9824C));
 
   EngineFonts[FontKristen].DrawText(
-    Point2(4.0, 4.0),
+    Point2f(4.0, 4.0),
     'FPS: ' + IntToStr(EngineTimer.FrameRate) + ', Cache Stall: ' + IntToStr(CacheStall),
-    IntColor2($FFFFFF62, $FFFF8424), 1.0);
+    ColorPair($FFFFFF62, $FFFF8424), 1.0);
 
   EngineFonts[FontKristen].DrawText(
-    Point2(4.0, 34.0),
+    Point2f(4.0, 34.0),
     'Technology: ' + GetFullDeviceTechString(EngineDevice),
-    IntColor2($FFE8FFAA, $FF12C312));
+    ColorPair($FFE8FFAA, $FF12C312));
 
   EngineCanvas.Flush;
   CacheStall := EngineCanvas.CacheStall;

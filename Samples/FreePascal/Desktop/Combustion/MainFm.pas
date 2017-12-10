@@ -1,16 +1,16 @@
 unit MainFm;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {
@@ -80,7 +80,7 @@ const
 
 var
   // The following variables are made global so they can be accessed by particle objects.
-  DisplaySize: TPoint2px;
+  DisplaySize: TPoint2i;
 
   EngineCanvas: TCustomCanvas;
   EngineImages: TAtlasImages;
@@ -91,9 +91,9 @@ type
   // This is a simplest particle object that moves with constant acceleration and has fixed life.
   TParticle = class(TScriptObject)
   private
-    FPosition: TPoint2;
-    FVelocity: TPoint2;
-    FAcceleration: TPoint2;
+    FPosition: TPoint2f;
+    FVelocity: TPoint2f;
+    FAcceleration: TPoint2f;
     FCurrentLife: Integer;
     FMaximumLife: Integer;
     FAngle: Single;
@@ -104,9 +104,9 @@ type
   public
     constructor Create(const AOwner: TScriptObject);
 
-    property Position: TPoint2 read FPosition;
-    property Velocity: TPoint2 read FVelocity;
-    property Acceleration: TPoint2 read FAcceleration;
+    property Position: TPoint2f read FPosition;
+    property Velocity: TPoint2f read FVelocity;
+    property Acceleration: TPoint2f read FAcceleration;
 
     property CurrentLife: Integer read FCurrentLife;
     property MaximumLife: Integer read FMaximumLife;
@@ -119,9 +119,9 @@ constructor TParticle.Create(const AOwner: TScriptObject);
 begin
   inherited Create(AOwner);
 
-  FPosition := Point2(Random(DisplaySize.X + 1), DisplaySize.Y);
-  FVelocity := Point2((Random(10) - 5) / 20.0, -(Random(20) / 5.0));
-  FAcceleration := Point2(0.0, -(0.001 + (Random(15) / 100)));
+  FPosition := Point2f(Random(DisplaySize.X + 1), DisplaySize.Y);
+  FVelocity := Point2f((Random(10) - 5) / 20.0, -(Random(20) / 5.0));
+  FAcceleration := Point2f(0.0, -(0.001 + (Random(15) / 100)));
   FMaximumLife := 56 + Random(32);
   FAngle := Random * 2.0 * Pi;
   FScale := 0.75 + Random * 0.5;
@@ -147,7 +147,7 @@ begin
 
   EngineCanvas.UseImageRegion(Image, Region);
   EngineCanvas.TexQuad(
-    FloatRect4RC(FPosition, Point2(ParticleSize, ParticleSize), FAngle, FScale),
+    TQuad.Rotated(FPosition, Point2f(ParticleSize, ParticleSize), FAngle, FScale),
     IntColorAlpha(0.75));
 end;
 
@@ -158,7 +158,7 @@ begin
   DeviceProvider := CreateDefaultProvider;
   EngineDevice := DeviceProvider.CreateDevice as TCustomSwapChainDevice;
 
-  DisplaySize := Point2px(ClientWidth, ClientHeight);
+  DisplaySize := Point2i(ClientWidth, ClientHeight);
   EngineDevice.SwapChains.Add(Handle, DisplaySize, 0, True);
 
   if not EngineDevice.Initialize then
@@ -251,7 +251,7 @@ end;
 
 procedure TMainForm.FormResize(Sender: TObject);
 begin
-  DisplaySize := Point2px(ClientWidth, ClientHeight);
+  DisplaySize := Point2i(ClientWidth, ClientHeight);
 
   if (EngineDevice <> nil) and (EngineTimer <> nil) and EngineDevice.Initialized then
   begin
@@ -319,10 +319,10 @@ end;
 
 procedure TMainForm.RenderScene;
 const
-  LogoSize: TPoint2px = (X: 480; Y: 128);
-  StatusSize: TPoint2px = (X: 400; Y: 32);
+  LogoSize: TPoint2i = (X: 480; Y: 128);
+  StatusSize: TPoint2i = (X: 400; Y: 32);
 var
- DrawAt: TPoint2px;
+ DrawAt: TPoint2i;
  I, J: Integer;
 begin
   // Draw particles according to their order.
@@ -333,18 +333,18 @@ begin
   DrawAt.Y := (DisplaySize.Y - LogoSize.Y) div 2;
 
   EngineCanvas.UseImageRegion(EngineImages[ImagePowerDraw], 0);
-  EngineCanvas.TexQuad(FloatRect4(DrawAt.X, DrawAt.Y, LogoSize.X div 2, LogoSize.Y), IntColorWhite4);
+  EngineCanvas.TexQuad(Quad(DrawAt.X, DrawAt.Y, LogoSize.X div 2, LogoSize.Y), ColorRectWhite);
 
   EngineCanvas.UseImageRegion(EngineImages[ImagePowerDraw], 1);
-  EngineCanvas.TexQuad(FloatRect4(DrawAt.X + (LogoSize.X div 2), DrawAt.Y, LogoSize.X div 2, LogoSize.Y),
-    IntColorWhite4);
+  EngineCanvas.TexQuad(Quad(DrawAt.X + (LogoSize.X div 2), DrawAt.Y, LogoSize.X div 2, LogoSize.Y),
+    ColorRectWhite);
 
   // Apply "Scanline" effect to the whole scene.
   for J := 0 to DisplaySize.Y div 64 do
     for I := 0 to DisplaySize.X div 64 do
     begin
       EngineCanvas.UseImage(EngineImages[ImageScanline]);
-      EngineCanvas.TexQuad(FloatRect4(I * 64, J * 64, 64, 64), IntColorWhite4, TBlendingEffect.Multiply);
+      EngineCanvas.TexQuad(Quad(I * 64, J * 64, 64, 64), ColorRectWhite, TBlendingEffect.Multiply);
     end;
 
   // Draw some fill for status background.
@@ -357,14 +357,14 @@ begin
 
   // Show current status.
   EngineFonts[FontVerdana].DrawText(
-    Point2(DrawAt.X + 2, DrawAt.Y),
+    Point2f(DrawAt.X + 2, DrawAt.Y),
     'Frame Rate: ' + IntToStr(EngineTimer.FrameRate) + ', Particle Count: ' + IntToStr(EngineParticles.ComputeTotalNodeCount),
-    IntColor2($FF00FF00, $FFFFFFFF));
+    ColorPair($FF00FF00, $FFFFFFFF));
 
   EngineFonts[FontVerdana].DrawText(
-    Point2(DrawAt.X + 2, DrawAt.Y + 14),
+    Point2f(DrawAt.X + 2, DrawAt.Y + 14),
     'Technology: ' + GetFullDeviceTechString(EngineDevice),
-    IntColor2($FFFF00FF, $FFFFFFFF));
+    ColorPair($FFFF00FF, $FFFFFFFF));
 end;
 
 end.

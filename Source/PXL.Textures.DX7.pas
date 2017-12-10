@@ -1,16 +1,16 @@
 unit PXL.Textures.DX7;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -33,7 +33,7 @@ type
     procedure DestroyTextureSurface;
 
     function GetSubSurface(const Level: Integer): IDirectDrawSurface7;
-    function GetSubSurfaceSize(const Level: Integer): TPoint2px;
+    function GetSubSurfaceSize(const Level: Integer): TPoint2i;
 
     procedure IntToLockRect(const Rect: PIntRect; var LockRect: Windows.TRect; var LockRectPtr: Windows.PRect);
 
@@ -50,7 +50,7 @@ type
     function DoUnlock: Boolean; override;
 
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
 
     function UpdateMipMaps: Boolean; virtual;
   public
@@ -78,7 +78,7 @@ type
     procedure DoFinalize; override;
 
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
   public
     function Bind(const Channel: Integer): Boolean; override;
 
@@ -232,14 +232,14 @@ begin
   Result := CurSurface;
 end;
 
-function TDX7LockableTexture.GetSubSurfaceSize(const Level: Integer): TPoint2px;
+function TDX7LockableTexture.GetSubSurfaceSize(const Level: Integer): TPoint2i;
 var
   SubSurface: IDirectDrawSurface7;
   SubDesc: DDSURFACEDESC2;
 begin
   SubSurface := GetSubSurface(Level);
   if SubSurface = nil then
-    Exit(ZeroPoint2px);
+    Exit(ZeroPoint2i);
 
   FillChar(SubDesc, SizeOf(DDSURFACEDESC2), 0);
 
@@ -251,7 +251,7 @@ begin
     Result.Y := SubDesc.dwHeight;
   end
   else
-    Result := ZeroPoint2px;
+    Result := ZeroPoint2i;
 end;
 
 procedure TDX7LockableTexture.IntToLockRect(const Rect: PIntRect; var LockRect: Windows.TRect;
@@ -356,7 +356,7 @@ end;
 
 function TDX7LockableTexture.GetPixelData(const Level: Integer; const Surface: TPixelSurface): Boolean;
 var
-  SubSize: TPoint2px;
+  SubSize: TPoint2i;
   LockedPixels: TLockedPixels;
   I, CopyBytes: Integer;
 begin
@@ -385,7 +385,7 @@ end;
 
 function TDX7LockableTexture.SetPixelData(const Level: Integer; const Surface: TPixelSurface): Boolean;
 var
-  SubSize: TPoint2px;
+  SubSize: TPoint2i;
   LockedPixels: TLockedPixels;
   I, CopyBytes: Integer;
 begin
@@ -441,7 +441,7 @@ begin
 end;
 
 function TDX7LockableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   WinDestRect, WinSourceRect: Windows.TRect;
 begin
@@ -616,7 +616,7 @@ begin
 end;
 
 function TDX7DrawableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   WinDestRect, WinSourceRect: Windows.TRect;
 begin

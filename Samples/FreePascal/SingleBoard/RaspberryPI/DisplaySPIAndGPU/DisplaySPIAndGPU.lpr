@@ -1,16 +1,16 @@
 program DisplaySPIAndGPU;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {
   This example illustrates usage of Raspberry PI integrated GPU for rendering off-screen scene, which can then be
   uploaded to an external HX8357-driven display using SPI protocol.
@@ -146,36 +146,36 @@ begin
     for J := 0 to FHardwareBitmap.Height div 40 do
       for I := 0 to FHardwareBitmap.Width div 40 do
         FHardwareBitmap.Canvas.FillQuad(
-          FloatRect4(I * 40, J * 40, 40, 40),
-          IntColor4($FF585858, $FF505050, $FF484848, $FF404040));
+          Quad(I * 40, J * 40, 40, 40),
+          ColorRect($FF585858, $FF505050, $FF484848, $FF404040));
 
     for I := 0 to FHardwareBitmap.Width div 40 do
       FHardwareBitmap.Canvas.Line(
-        Point2(I * 40.0, 0.0),
-        Point2(I * 40.0, FHardwareBitmap.Size.Y),
+        Point2f(I * 40.0, 0.0),
+        Point2f(I * 40.0, FHardwareBitmap.Size.Y),
         $FF555555);
 
     for J := 0 to FHardwareBitmap.Height div 40 do
       FHardwareBitmap.Canvas.Line(
-        Point2(0.0, J * 40.0),
-        Point2(FHardwareBitmap.Size.X, J * 40.0),
+        Point2f(0.0, J * 40.0),
+        Point2f(FHardwareBitmap.Size.X, J * 40.0),
         $FF555555);
 
     // Draw an animated hole.
     FHardwareBitmap.Canvas.QuadHole(
-      Point2(0.0, 0.0),
+      Point2f(0.0, 0.0),
       FHardwareBitmap.Size,
-      Point2(
+      Point2f(
         FHardwareBitmap.Width * 0.5 + Cos(FCurrentFrame * 0.073) * FHardwareBitmap.Width * 0.25,
         FHardwareBitmap.Height * 0.5 + Sin(FCurrentFrame * 0.0312) * FHardwareBitmap.Height * 0.25),
-      Point2(80.0, 100.0),
+      Point2f(80.0, 100.0),
       $20FFFFFF, $80955BFF, 16);
 
     // Draw the image of famous Lenna.
     FHardwareBitmap.Canvas.UseImage(FAcceleratedImages[FImageLenna]);
-    FHardwareBitmap.Canvas.TexQuad(FloatRect4RC(
-      TPoint2(FHardwareBitmap.Size) * 0.5,
-      Point2(300.0, 300.0),
+    FHardwareBitmap.Canvas.TexQuad(TQuad.Rotated(
+      TPoint2f(FHardwareBitmap.Size) * 0.5,
+      Point2f(300.0, 300.0),
       FCurrentFrame * 0.1),
       IntColorAlpha(128));
 
@@ -184,34 +184,34 @@ begin
     Kappa := 1.25 * Pi + Sin(FCurrentFrame * 0.1854) * 0.5 * Pi;
 
     FHardwareBitmap.Canvas.FillArc(
-      Point2(FHardwareBitmap.Width * 0.15, FHardwareBitmap.Height * 0.8),
-      Point2(75.0, 50.0),
+      Point2f(FHardwareBitmap.Width * 0.15, FHardwareBitmap.Height * 0.8),
+      Point2f(75.0, 50.0),
       Omega, Omega + Kappa, 32,
-      IntColor4($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
+      ColorRect($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
 
     // Draw an animated Ribbon.
     Omega := FCurrentFrame * 0.2231;
     Kappa := 1.25 * Pi + Sin(FCurrentFrame * 0.24751) * 0.5 * Pi;
 
     FHardwareBitmap.Canvas.FillRibbon(
-      Point2(FHardwareBitmap.Width * 0.75, FHardwareBitmap.Height * 0.8),
-      Point2(25.0, 20.0),
-      Point2(70.0, 80.0),
+      Point2f(FHardwareBitmap.Width * 0.75, FHardwareBitmap.Height * 0.8),
+      Point2f(25.0, 20.0),
+      Point2f(70.0, 80.0),
       Omega, Omega + Kappa, 32,
-      IntColor4($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
+      ColorRect($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
 
     // Draw some text.
     FAcceleratedFonts.Canvas := FHardwareBitmap.Canvas;
 
     FAcceleratedFonts[FFontTahoma].DrawText(
-      Point2(4.0, 4.0),
+      Point2f(4.0, 4.0),
       'GPU rendering on SPI display demo application.',
-      IntColor2($FFFFE887, $FFFF0000));
+      ColorPair($FFFFE887, $FFFF0000));
 
     FAcceleratedFonts[FFontTahoma].DrawText(
-      Point2(4.0, 24.0),
+      Point2f(4.0, 24.0),
       'Technology: ' + GetFullDeviceTechString(FAcceleratedDevice),
-      IntColor2($FFE8FFAA, $FF12C312));
+      ColorPair($FFE8FFAA, $FF12C312));
   finally
     FHardwareBitmap.Canvas.EndScene;
   end;
@@ -245,7 +245,7 @@ begin
 
     // Draw software bitmap on display.
     FDisplay.Canvas.UseImage(FSoftwareBitmap);
-    FDisplay.Canvas.TexQuad(FloatRect4(0.0, 0.0, FSoftwareBitmap.Width, FSoftwareBitmap.Height), IntColorWhite4);
+    FDisplay.Canvas.TexQuad(Quad(0.0, 0.0, FSoftwareBitmap.Width, FSoftwareBitmap.Height), ColorRectWhite);
 
     // Present picture on the display.
     FDisplay.Present;

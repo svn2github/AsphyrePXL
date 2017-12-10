@@ -1,15 +1,16 @@
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
 { Indicates that this config file has been processed (to avoid redeclaring or redefining of parameters in other
   configuration files). }
 {$DEFINE PXL_CONFIG}
@@ -30,11 +31,12 @@
   {$DEFINE PXL_SCIENTIFIC_MODE}
 {$ENDIF}
 
-{ Enable the following option to support antialiased lines even when multisampling is disabled. This is typically
-  supported on Nvidia DirectX hardware. }
+{ Enable the following option to support antialiased lines even when multisampling is disabled.
+  This is typically supported on Nvidia DirectX hardware. }
 {$DEFINE PXL_NOMSAA_ANTIALIASED_LINES}
 
 {$SCOPEDENUMS ON}
+{$MINENUMSIZE 1}
 {$B-}
 {$I-}
 
@@ -47,6 +49,7 @@
 
   {$MODE DELPHI}
   {$MODESWITCH TYPEHELPERS}
+  {$PACKRECORDS C}
 
   {$IFDEF CPU32}
     {$IFDEF I386}
@@ -68,15 +71,14 @@
   {$IFDEF EMBEDDED}
     {$DEFINE SINGLEBOARD}
     {$ALIGN 2}
-    {$IFNDEF ARM}
-      {$DEFINE AVR}
-    {$ENDIF}
+    {.$DEFINE MICROBOARD}
   {$ENDIF}
 
 {$ELSE}
   // Delphi compiler directives.
 
   {$DEFINE DELPHI}
+  {$ALIGN ON}
 
   {$IFDEF VER180} // Delphi 2006
     {$DEFINE DELPHI_LEGACY}
@@ -189,7 +191,7 @@
     {$DEFINE DELPHI_XE8}
   {$ENDIF}
 
-  {$IFDEF VER300} // Delphi XE 10
+  {$IFDEF VER300} // Delphi Seattle
     {$DEFINE DELPHI_2009_UP}
     {$DEFINE DELPHI_2010_UP}
     {$DEFINE DELPHI_XE_UP}
@@ -204,8 +206,52 @@
     {$DEFINE DELPHI_XE7}
     {$DEFINE DELPHI_XE8_UP}
     {$DEFINE DELPHI_XE8}
-    {$DEFINE DELPHI_XE10_UP}
-    {$DEFINE DELPHI_XE10}
+    {$DEFINE DELPHI_SEATTLE_UP}
+    {$DEFINE DELPHI_SEATTLE}
+  {$ENDIF}
+
+  {$IFDEF VER310} // Delphi Berlin
+    {$DEFINE DELPHI_2009_UP}
+    {$DEFINE DELPHI_2010_UP}
+    {$DEFINE DELPHI_XE_UP}
+    {$DEFINE DELPHI_XE2_UP}
+    {$DEFINE DELPHI_XE3_UP}
+    {$DEFINE DELPHI_XE4_UP}
+    {$DEFINE DELPHI_XE5_UP}
+    {$DEFINE DELPHI_XE5}
+    {$DEFINE DELPHI_XE6_UP}
+    {$DEFINE DELPHI_XE6}
+    {$DEFINE DELPHI_XE7_UP}
+    {$DEFINE DELPHI_XE7}
+    {$DEFINE DELPHI_XE8_UP}
+    {$DEFINE DELPHI_XE8}
+    {$DEFINE DELPHI_SEATTLE_UP}
+    {$DEFINE DELPHI_SEATTLE}
+    {$DEFINE DELPHI_BERLIN_UP}
+    {$DEFINE DELPHI_BERLIN}
+  {$ENDIF}
+
+  {$IFDEF VER320} // Delphi Tokyo
+    {$DEFINE DELPHI_2009_UP}
+    {$DEFINE DELPHI_2010_UP}
+    {$DEFINE DELPHI_XE_UP}
+    {$DEFINE DELPHI_XE2_UP}
+    {$DEFINE DELPHI_XE3_UP}
+    {$DEFINE DELPHI_XE4_UP}
+    {$DEFINE DELPHI_XE5_UP}
+    {$DEFINE DELPHI_XE5}
+    {$DEFINE DELPHI_XE6_UP}
+    {$DEFINE DELPHI_XE6}
+    {$DEFINE DELPHI_XE7_UP}
+    {$DEFINE DELPHI_XE7}
+    {$DEFINE DELPHI_XE8_UP}
+    {$DEFINE DELPHI_XE8}
+    {$DEFINE DELPHI_SEATTLE_UP}
+    {$DEFINE DELPHI_SEATTLE}
+    {$DEFINE DELPHI_BERLIN_UP}
+    {$DEFINE DELPHI_BERLIN}
+    {$DEFINE DELPHI_TOKYO_UP}
+    {$DEFINE DELPHI_TOKYO}
   {$ENDIF}
 
   {$IFDEF NEXTGEN}

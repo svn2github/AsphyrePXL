@@ -1,16 +1,16 @@
 unit PXL.Boards.RPi;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {
   Acknowledgments:
 
@@ -41,7 +41,8 @@ interface
   would prevent native Linux SPI / I2C from working until next reboot, or until the function of these pins is adjusted. }
 {.$DEFINE DATAPORTS_PINS_RESET_AFTER_DONE}
 
-// The following option controls whether the code is optimized for Raspberry PI 2.
+{ The following option controls whether the code is optimized for Raspberry PI 2. Note that when this option is disabled,
+  compiled applications should run on all versions of Raspberry PI, including Raspberry PI 2. }
 {.$DEFINE RPi2}
 
 uses
@@ -79,11 +80,11 @@ type
     destructor Destroy; override;
 
     { Returns the current value of system timer as 64-bit unsigned integer, in microseconds. }
-    function GetTickCount: UInt64; override;
+    function GetTickCount: TTickCounter; override;
 
     { Waits for the specified amount of microseconds, calling NanoSleep if waiting time is long enough for the most
       portion of wait time, while the remaining part doing a busy wait to provide greater accuracy. }
-    procedure Delay(const MicroSeconds: Cardinal); override;
+    procedure MicroDelay(const MicroSeconds: Cardinal); virtual;
   end;
 
   TNumberingScheme = (Printed, BCM);
@@ -97,19 +98,22 @@ type
     FNumberingScheme: TNumberingScheme;
 
     function GetChipOffsetGPIO: TChipOffset; inline;
-    function GetPinModeEx(const Pin: Integer): TPinModeEx;
-    procedure SetPinModeEx(const Pin: Integer; const Value: TPinModeEx);
+    function GetPinModeEx(const Pin: TPinIdentifier): TPinModeEx;
+    procedure SetPinModeEx(const Pin: TPinIdentifier; const Value: TPinModeEx); inline;
   protected
     function GetOffsetPointer(const Offset: Cardinal): Pointer; inline;
-    function ProcessPinNumber(const Pin: Integer): Integer;
+    function ProcessPinNumber(const Pin: TPinIdentifier): TPinIdentifier;
 
-    procedure SetPinModeBCM(const PinBCM: Integer; const Mode: TPinModeEx);
+    procedure SetPinModeBCM(const PinBCM: TPinIdentifier; const Mode: TPinModeEx);
 
-    function GetPinMode(const Pin: Integer): TPinMode; override;
-    procedure SetPinMode(const Pin: Integer; const Mode: TPinMode); override;
+    function GetPinMode(const Pin: TPinIdentifier): TPinMode; override;
+    procedure SetPinMode(const Pin: TPinIdentifier; const Mode: TPinMode); override;
 
-    function GetPinValue(const Pin: Integer): TPinValue; override;
-    procedure SetPinValue(const Pin: Integer; const Value: TPinValue); override;
+    function GetPinValue(const Pin: TPinIdentifier): TPinValue; override;
+    procedure SetPinValue(const Pin: TPinIdentifier; const Value: TPinValue); override;
+
+    function GetPinDrive(const Pin: TPinIdentifier): TPinDrive; override;
+    procedure SetPinDrive(const Pin: TPinIdentifier; const Value: TPinDrive); override;
 
     property Memory: Pointer read FMemory;
   public
@@ -119,7 +123,7 @@ type
 
     { Quickly changes specified pin value (assuming it is set for output). Note that the pin must be specified using
       native BCM numbering scheme. }
-    procedure SetFastValue(const PinBCM: Integer; const Value: TPinValue);
+    procedure SetFastValue(const PinBCM: TPinIdentifier; const Value: TPinValue);
 
     { Reference to @link(TFastSystemCore), which provides high performance timing and delay utilities. }
     property SystemCore: TFastSystemCore read FSystemCore;
@@ -131,7 +135,7 @@ type
 
     { Provides control and feedback of currently selected mode for the given pin, including alternative functions as
       supported by BCM2835 chip. }
-    property PinModeEx[const Pin: Integer]: TPinModeEx read GetPinModeEx write SetPinModeEx;
+    property PinModeEx[const Pin: TPinIdentifier]: TPinModeEx read GetPinModeEx write SetPinModeEx;
   end;
 
   TFastSPI = class(TCustomPortSPI)
@@ -160,48 +164,45 @@ type
     FFastGPIO: TFastGPIO;
     FMemory: Pointer;
 
-    FMode: Integer;
-    FFrequency: Integer;
-    FChipSelectAttributes: TChipSelectAttributes;
-    FChipSelect: Integer;
+    FFrequency: Cardinal;
+    FMode: TSPIMode;
+    FChipSelectIndex: Cardinal;
 
     function GetChipOffsetSPI: TChipOffset; inline;
-    procedure SetChipSelect(const Value: Integer);
+    procedure UpdateChipSelectMode;
+    procedure UpdateChipSelectIndex;
+    procedure UpdateFrequency(const NewFrequency: Cardinal);
+    procedure UpdateMode;
+    procedure SetChipSelectIndex(const Value: Cardinal);
   protected
     function GetOffsetPointer(const Offset: Cardinal): Pointer; inline;
 
-    function GetMode: Integer; override;
-    procedure SetMode(const Value: Integer); override;
-    function GetBitsPerWord: Integer; override;
-    procedure SetBitsPerWord(const Value: Integer); override;
-    function GetFrequency: Integer; override;
-    procedure SetFrequency(const Value: Integer); override;
-    function GetChipSelectAttributes: TChipSelectAttributes; override;
-    procedure SetChipSelectAttributes(const Value: TChipSelectAttributes); override;
+    function GetFrequency: Cardinal; override;
+    procedure SetFrequency(const Value: Cardinal); override;
+    function GetBitsPerWord: TBitsPerWord; override;
+    procedure SetBitsPerWord(const Value: TBitsPerWord); override;
+    function GetMode: TSPIMode; override;
+    procedure SetMode(const Value: TSPIMode); override;
 
     property FastGPIO: TFastGPIO read FFastGPIO;
     property Memory: Pointer read FMemory;
   public
-    constructor Create(const AFastGPIO: TFastGPIO; const AChipSelect: Integer = DefaultChipSelect;
-      const AFrequency: Integer = DefaultFrequency; const AMode: Integer = DefaultMode);
+    constructor Create(const AFastGPIO: TFastGPIO; const AChipSelectMode: TChipSelectMode = TChipSelectMode.ActiveLow);
     destructor Destroy; override;
 
-    function Read(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function Write(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function Transfer(const ReadBuffer, WriteBuffer: Pointer; const BufferSize: Integer): Integer; override;
-
-    { Defines clock polarity and phase for SPI operation. }
-    property Mode: Integer read FMode write SetMode;
+    function Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function Transfer(const ReadBuffer, WriteBuffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
 
     { Controls the operating frequency of SPI bus in Hz, with supported values between ~3.8 kHz and 125 mHz.
       Typically, default value for SPI is 8 mHz. }
-    property Frequency: Integer read FFrequency write SetFrequency;
+    property Frequency: Cardinal read FFrequency write SetFrequency;
+
+    { Defines clock polarity and phase for SPI operation. }
+    property Mode: TSPIMode read FMode write SetMode;
 
     { Defines what Chip Select line to enable during transfers. Supported values are 0 = CE0 and 1 = CE1. }
-    property ChipSelect: Integer read FChipSelect write SetChipSelect;
-
-    { Determines how Chip Select line is handled by protocol. }
-    property ChipSelectAttributes: TChipSelectAttributes read FChipSelectAttributes write SetChipSelectAttributes;
+    property ChipSelectIndex: Cardinal read FChipSelectIndex write SetChipSelectIndex;
   end;
 
   TFastI2C = class(TCustomPortI2C)
@@ -233,13 +234,13 @@ type
   strict private
     FFastGPIO: TFastGPIO;
     FMemory: Pointer;
-    FFrequency: Integer;
+    FFrequency: Cardinal;
     FTimePerByte: Cardinal;
 
     function GetChipOffsetI2C: TChipOffset; inline;
     procedure UpdateTimePerByte(const ClockDivider: Cardinal);
-    procedure SetFrequency(const Value: Integer);
-    function ProcessBlockCounter(var BlockCounter: Integer; var BlockTimeoutStart: UInt64): Boolean; inline;
+    procedure SetFrequency(const Value: Cardinal);
+    function ProcessBlockCounter(var BlockCounter: Integer; var BlockTimeoutStart: TTickCounter): Boolean; inline;
   protected
     function GetOffsetPointer(const Offset: Cardinal): Pointer; inline;
 
@@ -249,16 +250,16 @@ type
     constructor Create(const AFastGPIO: TFastGPIO);
     destructor Destroy; override;
 
-    procedure SetAddress(const Address: Integer); override;
+    procedure SetAddress(const Address: Cardinal); override;
 
-    function Read(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function Write(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
+    function Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
 
-    function ReadBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function WriteBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer; override;
+    function ReadBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function WriteBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
 
     { Controls the operating frequency of I2C bus in Hz. }
-    property Frequency: Integer read FFrequency write SetFrequency;
+    property Frequency: Cardinal read FFrequency write SetFrequency;
   end;
 
   TDefaultUART = class(TSysfsUART)
@@ -507,7 +508,7 @@ begin
   Result := Pointer(PtrUInt(FMemory) + Offset);
 end;
 
-function TFastSystemCore.GetTickCount: UInt64;
+function TFastSystemCore.GetTickCount: TTickCounter;
 var
   UpperBits, LowerBits: Cardinal;
 begin
@@ -522,9 +523,9 @@ begin
     Result := (Result shl 32) or LowerBits;
 end;
 
-procedure TFastSystemCore.Delay(const MicroSeconds: Cardinal);
+procedure TFastSystemCore.MicroDelay(const MicroSeconds: Cardinal);
 var
-  StartTicks: UInt64;
+  StartTicks: TTickCounter;
   NanoSpec: timespec;
 begin
   StartTicks := GetTickCount;
@@ -576,33 +577,33 @@ begin
   Result := Pointer(PtrUInt(FMemory) + Offset);
 end;
 
-function TFastGPIO.ProcessPinNumber(const Pin: Integer): Integer;
+function TFastGPIO.ProcessPinNumber(const Pin: TPinIdentifier): TPinIdentifier;
 begin
   if FNumberingScheme = TNumberingScheme.Printed then
   begin
-    if (Pin < Low(PinmapPrintedToBCM)) or (Pin > High(PinmapPrintedToBCM)) then
-      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedBCMPinInvalid, [Pin]));
+    if Pin > High(PinmapPrintedToBCM) then
+      raise EGPIOInvalidPin.CreateFmt(SGPIOSpecifiedBCMPinInvalid, [Pin]);
 
     Result := PinmapPrintedToBCM[Pin];
   end
   else
   begin
-    if (Pin < 0) or (Pin > 53) then
-      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPrintedPinInvalid, [Pin]));
+    if Pin > 53 then
+      raise EGPIOInvalidPin.CreateFmt(SGPIOSpecifiedPrintedPinInvalid, [Pin]);
 
     Result := Pin;
   end;
 end;
 
-procedure TFastGPIO.SetPinModeBCM(const PinBCM: Integer; const Mode: TPinModeEx);
+procedure TFastGPIO.SetPinModeBCM(const PinBCM: TPinIdentifier; const Mode: TPinModeEx);
 var
   Shift: Integer;
 begin
-  Shift := (PinBCM mod 10) * 3;
+  Shift := (Integer(PinBCM) mod 10) * 3;
   ChangeBitsSafe(GetOffsetPointer((Cardinal(PinBCM) div 10) * 4), Ord(Mode) shl Shift, $07 shl Shift);
 end;
 
-function TFastGPIO.GetPinMode(const Pin: Integer): TPinMode;
+function TFastGPIO.GetPinMode(const Pin: TPinIdentifier): TPinMode;
 begin
   case GetPinModeEx(Pin) of
     TPinModeEx.Input:
@@ -610,11 +611,11 @@ begin
     TPinModeEx.Output:
       Result := TPinMode.Output;
   else
-    raise EGPIOAlternateFunctionPin.Create(Format(SGPIOSpecifiedBCMPinAlternativeMode, [Pin]));
+    raise EGPIOAlternateFunctionPin.CreateFmt(SGPIOSpecifiedBCMPinAlternativeMode, [Pin]);
   end;
 end;
 
-procedure TFastGPIO.SetPinMode(const Pin: Integer; const Mode: TPinMode);
+procedure TFastGPIO.SetPinMode(const Pin: TPinIdentifier; const Mode: TPinMode);
 begin
   if Mode = TPinMode.Output then
     SetPinModeEx(Pin, TPinModeEx.Output)
@@ -622,9 +623,9 @@ begin
     SetPinModeEx(Pin, TPinModeEx.Input);
 end;
 
-function TFastGPIO.GetPinValue(const Pin: Integer): TPinValue;
+function TFastGPIO.GetPinValue(const Pin: TPinIdentifier): TPinValue;
 var
-  PinBCM: Integer;
+  PinBCM: TPinIdentifier;
 begin
   PinBCM := ProcessPinNumber(Pin);
 
@@ -634,9 +635,9 @@ begin
     Result := TPinValue.Low;
 end;
 
-procedure TFastGPIO.SetPinValue(const Pin: Integer; const Value: TPinValue);
+procedure TFastGPIO.SetPinValue(const Pin: TPinIdentifier; const Value: TPinValue);
 var
-  PinBCM: Integer;
+  PinBCM: TPinIdentifier;
   DestPtr: Pointer;
 begin
   PinBCM := ProcessPinNumber(Pin);
@@ -649,10 +650,19 @@ begin
   WriteMemSafe(DestPtr, 1 shl (PinBCM mod 32));
 end;
 
-function TFastGPIO.GetPinModeEx(const Pin: Integer): TPinModeEx;
+function TFastGPIO.GetPinDrive(const Pin: TPinIdentifier): TPinDrive;
+begin
+  Result := TPinDrive.None;
+end;
+
+procedure TFastGPIO.SetPinDrive(const Pin: TPinIdentifier; const Value: TPinDrive);
+begin
+end;
+
+function TFastGPIO.GetPinModeEx(const Pin: TPinIdentifier): TPinModeEx;
 var
   Address: Pointer;
-  PinBCM: Integer;
+  PinBCM: TPinIdentifier;
 begin
   PinBCM := ProcessPinNumber(Pin);
   Address := GetOffsetPointer((Cardinal(PinBCM) div 10) * 4);
@@ -660,12 +670,12 @@ begin
   Result := TPinModeEx((ReadMemSafe(Address) shr ((PinBCM mod 10) * 3)) and $07);
 end;
 
-procedure TFastGPIO.SetPinModeEx(const Pin: Integer; const Value: TPinModeEx);
+procedure TFastGPIO.SetPinModeEx(const Pin: TPinIdentifier; const Value: TPinModeEx);
 begin
   SetPinModeBCM(ProcessPinNumber(Pin), Value);
 end;
 
-procedure TFastGPIO.SetFastValue(const PinBCM: Integer; const Value: TPinValue);
+procedure TFastGPIO.SetFastValue(const PinBCM: TPinIdentifier; const Value: TPinValue);
 var
   DestValue: PLongWord;
 begin
@@ -680,12 +690,11 @@ end;
 {$ENDREGION}
 {$REGION 'TFastSPI'}
 
-constructor TFastSPI.Create(const AFastGPIO: TFastGPIO;
-  const AChipSelect: Integer; const AFrequency: Integer; const AMode: Integer);
+constructor TFastSPI.Create(const AFastGPIO: TFastGPIO; const AChipSelectMode: TChipSelectMode);
 var
   DestPtr: Pointer;
 begin
-  inherited Create;
+  inherited Create(AChipSelectMode);
 
   FFastGPIO := AFastGPIO;
   if FFastGPIO = nil then
@@ -703,13 +712,10 @@ begin
   WriteMemSafe(DestPtr, 0);
   WriteMemFast(DestPtr, MaskControlStatusClearBuffer);
 
-  FChipSelect := -1;
-  FMode := -1;
-  FFrequency := -1;
-
-  SetChipSelect(AChipSelect);
-  SetMode(AMode);
-  SetFrequency(AFrequency);
+  UpdateFrequency(8000000);
+  UpdateMode;
+  UpdateChipSelectMode;
+  UpdateChipSelectIndex;
 end;
 
 destructor TFastSPI.Destroy;
@@ -737,114 +743,117 @@ begin
   Result := Pointer(PtrUInt(FMemory) + Offset);
 end;
 
-function TFastSPI.GetMode: Integer;
+procedure TFastSPI.UpdateChipSelectMode;
+var
+  ActiveValue: Cardinal;
 begin
-  Result := FMode;
-end;
-
-procedure TFastSPI.SetMode(const Value: Integer);
-begin
-  if FMode <> Value then
+  if FChipSelectMode <> TChipSelectMode.Disabled then
   begin
-    FMode := Value;
-    ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), FMode shl 2, MaskControlStatusClockPolarity or
-      MaskControlStatusClockPhase);
-  end;
+    if FChipSelectMode = TChipSelectMode.ActiveHigh then
+      ActiveValue := 1
+    else
+      ActiveValue := 0;
+
+    ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), Ord(ActiveValue) shl 21, 1 shl 21);
+    ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), Ord(ActiveValue) shl 22, 1 shl 22);
+  end
+  else
+    ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), 3, MaskControlStatusChipSelect)
 end;
 
-function TFastSPI.GetBitsPerWord: Integer;
+procedure TFastSPI.UpdateChipSelectIndex;
 begin
-  Result := 8;
+  ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), FChipSelectIndex and $01, MaskControlStatusChipSelect);
 end;
 
-procedure TFastSPI.SetBitsPerWord(const Value: Integer);
-begin
-  if Value <> 8 then
-    raise ESPIUnsupportedBitsPerWord.Create(Format(SSPIUnsupportedBitsPerWord, [Value]));
-end;
-
-function TFastSPI.GetFrequency: Integer;
-begin
-  Result := FFrequency;
-end;
-
-procedure TFastSPI.SetFrequency(const Value: Integer);
+procedure TFastSPI.UpdateFrequency(const NewFrequency: Cardinal);
 var
   RealDivider: Single;
   ActualDivider: Integer;
 begin
-  if Value < 1 then
-    raise ESPIUnsupportedFrequency.Create(Format(SSPIUnsupportedFrequency, [Value]));
+  RealDivider := TFastSystemCore.BaseClock / NewFrequency;
+
+  ActualDivider := Round(Power(2, Round(Log2(RealDivider))));
+
+  if (ActualDivider < 1) or (ActualDivider > 65536) then
+    raise ESPIUnsupportedFrequency.Create(Format(SSPIUnsupportedFrequency, [NewFrequency]));
+
+  if ActualDivider = 65536 then
+    ActualDivider := 0;
+
+  WriteMemSafe(GetOffsetPointer(OffsetClockDivider), ActualDivider);
+
+  FFrequency := NewFrequency;
+end;
+
+procedure TFastSPI.UpdateMode;
+begin
+  ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), FMode shl 2, MaskControlStatusClockPolarity or
+    MaskControlStatusClockPhase);
+end;
+
+procedure TFastSPI.SetChipSelectIndex(const Value: Cardinal);
+begin
+  if Value > 1 then
+    raise ESPIUnsupportedChipSelect.CreateFmt(SSPIUnsupportedChipSelect, [Value]);
+
+  if FChipSelectIndex <> Value then
+  begin
+    FChipSelectIndex := Value;
+    UpdateChipSelectIndex;
+  end;
+end;
+
+function TFastSPI.GetFrequency: Cardinal;
+begin
+  Result := FFrequency;
+end;
+
+procedure TFastSPI.SetFrequency(const Value: Cardinal);
+begin
+  if Value = 0 then
+    raise ESPIUnsupportedFrequency.CreateFmt(SSPIUnsupportedFrequency, [Value]);
 
   if FFrequency <> Value then
+    UpdateFrequency(Value);
+end;
+
+function TFastSPI.GetBitsPerWord: TBitsPerWord;
+begin
+  Result := 8;
+end;
+
+procedure TFastSPI.SetBitsPerWord(const Value: TBitsPerWord);
+begin
+  if Value <> 8 then
+    raise ESPIUnsupportedBitsPerWord.CreateFmt(SSPIUnsupportedBitsPerWord, [Value]);
+end;
+
+function TFastSPI.GetMode: TMode;
+begin
+  Result := FMode;
+end;
+
+procedure TFastSPI.SetMode(const Value: TMode);
+begin
+  if FMode <> Value then
   begin
-    RealDivider := TFastSystemCore.BaseClock / Value;
-
-    ActualDivider := Round(Power(2, Round(Log2(RealDivider))));
-
-    if (ActualDivider < 1) or (ActualDivider > 65536) then
-      raise ESPIUnsupportedFrequency.Create(Format(SSPIUnsupportedFrequency, [Value]));
-
-    if ActualDivider = 65536 then
-      ActualDivider := 0;
-
-    WriteMemSafe(GetOffsetPointer(OffsetClockDivider), ActualDivider);
-
-    FFrequency := Value;
+    FMode := Value;
+    UpdateMode;
   end;
 end;
 
-function TFastSPI.GetChipSelectAttributes: TChipSelectAttributes;
-begin
-  Result := FChipSelectAttributes;
-end;
-
-procedure TFastSPI.SetChipSelectAttributes(const Value: TChipSelectAttributes);
-var
-  ActiveValue: Cardinal;
-begin
-  if FChipSelectAttributes <> Value then
-  begin
-    FChipSelectAttributes := Value;
-
-    if TChipSelectAttribute.Disable in FChipSelectAttributes then
-      ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), 3, MaskControlStatusChipSelect)
-    else
-    begin
-      if TChipSelectAttribute.ActiveHigh in FChipSelectAttributes then
-        ActiveValue := 1
-      else
-        ActiveValue := 0;
-
-      ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), Ord(ActiveValue) shl 21, 1 shl 21);
-      ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), Ord(ActiveValue) shl 22, 1 shl 22);
-    end;
-  end;
-end;
-
-procedure TFastSPI.SetChipSelect(const Value: Integer);
-begin
-  if (Value < 0) or (Value > 1) or (TChipSelectAttribute.Disable in FChipSelectAttributes) then
-    raise ESPIUnsupportedChipSelect.Create(Format(SSPIUnsupportedChipSelect, [Value]));
-
-  if FChipSelect <> Value then
-  begin
-    FChipSelect := Value;
-    ChangeBitsSafe(GetOffsetPointer(OffsetControlStatus), FChipSelect, MaskControlStatusChipSelect);
-  end;
-end;
-
-function TFastSPI.Read(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TFastSPI.Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 begin
   Result := Transfer(Buffer, nil, BufferSize);
 end;
 
-function TFastSPI.Write(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TFastSPI.Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 begin
   Result := Transfer(nil, Buffer, BufferSize);
 end;
 
-function TFastSPI.Transfer(const ReadBuffer, WriteBuffer: Pointer; const BufferSize: Integer): Integer;
+function TFastSPI.Transfer(const ReadBuffer, WriteBuffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   ControlStatusPtr, DataBufferPtr: Pointer;
   BytesRead, BytesWritten, BlockCounter: Integer;
@@ -902,7 +911,7 @@ begin
         begin
           if FFastGPIO.SystemCore.TicksInBetween(BlockTimeoutStart, FFastGPIO.SystemCore.GetTickCount) >
             TransferBlockTimeout then
-            Exit(-1);
+            Exit(0);
         end
         else
           Inc(BlockCounter);
@@ -915,7 +924,7 @@ begin
     while ReadMemFast(ControlStatusPtr) and MaskControlStatusDone = 0 do
       if FFastGPIO.SystemCore.TicksInBetween(BlockTimeoutStart, FFastGPIO.SystemCore.GetTickCount) >
         TransferBlockTimeout then
-        Exit(-1);
+        Exit(0);
   finally
     // End transfer (TA = 0)
     ChangeBitsSafe(ControlStatusPtr, 0, MaskControlStatusTransfer);
@@ -967,7 +976,7 @@ begin
   FTimePerByte := (UInt64(ClockDivider) * BitsPerByte * 1000000) div TFastSystemCore.BaseClock;
 end;
 
-procedure TFastI2C.SetFrequency(const Value: Integer);
+procedure TFastI2C.SetFrequency(const Value: Cardinal);
 var
   ClockDivider: Cardinal;
 begin
@@ -996,12 +1005,12 @@ begin
   Result := Pointer(PtrUInt(FMemory) + Offset);
 end;
 
-procedure TFastI2C.SetAddress(const Address: Integer);
+procedure TFastI2C.SetAddress(const Address: Cardinal);
 begin
   WriteMemSafe(GetOffsetPointer(OffsetSlaveAddress), Address);
 end;
 
-function TFastI2C.ProcessBlockCounter(var BlockCounter: Integer; var BlockTimeoutStart: UInt64): Boolean;
+function TFastI2C.ProcessBlockCounter(var BlockCounter: Integer; var BlockTimeoutStart: TTickCounter): Boolean;
 begin
   if BlockCounter = -1 then
     BlockCounter := 0
@@ -1012,7 +1021,8 @@ begin
 
     if BlockCounter >= TransferCounterMax then
     begin
-      if FFastGPIO.SystemCore.TicksInBetween(BlockTimeoutStart, FFastGPIO.SystemCore.GetTickCount) > TransferTimeout then
+      if FFastGPIO.SystemCore.TicksInBetween(BlockTimeoutStart,
+        FFastGPIO.SystemCore.GetTickCount) > TransferTimeout then
         Exit(False);
     end
     else
@@ -1022,11 +1032,12 @@ begin
   Result := True;
 end;
 
-function TFastI2C.Read(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TFastI2C.Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   ControlPtr, StatusPtr, DataBufferPtr: Pointer;
-  BytesRead, BlockCounter: Integer;
-  BlockTimeoutStart: UInt64;
+  BlockTimeoutStart: TTickCounter;
+  BlockCounter: Integer;
+  BytesRead: Cardinal;
 begin
   ControlPtr := GetOffsetPointer(OffsetControl);
   StatusPtr := GetOffsetPointer(OffsetStatus);
@@ -1056,7 +1067,7 @@ begin
     end;
 
     if not ProcessBlockCounter(BlockCounter, BlockTimeoutStart) then
-      Exit(-1);
+      Exit(0);
   end;
 
   // Retrieve any remaining bytes from FIFO buffer.
@@ -1070,14 +1081,15 @@ begin
 
   // Check status flags for any issues during read.
   if ReadMemSafe(StatusPtr) and (MaskStatusNoACK or MaskStatusTimeout) > 0 then
-    Result := -1;
+    Result := 0;
 end;
 
-function TFastI2C.Write(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TFastI2C.Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   ControlPtr, StatusPtr, DataBufferPtr: Pointer;
-  BytesWritten, BlockCounter: Integer;
-  BlockTimeoutStart: UInt64;
+  BlockTimeoutStart: TTickCounter;
+  BytesWritten: Cardinal;
+  BlockCounter: Integer;
 begin
   ControlPtr := GetOffsetPointer(OffsetControl);
   StatusPtr := GetOffsetPointer(OffsetStatus);
@@ -1115,21 +1127,22 @@ begin
     end;
 
     if not ProcessBlockCounter(BlockCounter, BlockTimeoutStart) then
-      Exit(-1);
+      Exit(0);
   end;
 
   Result := BytesWritten;
 
   // Check status flags for any issues during write.
   if ReadMemSafe(StatusPtr) and (MaskStatusNoACK or MaskStatusTimeout) > 0 then
-    Result := -1;
+    Result := 0;
 end;
 
-function TFastI2C.ReadBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TFastI2C.ReadBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   ControlPtr, StatusPtr, DataBufferPtr: Pointer;
-  BytesRead, BlockCounter: Integer;
-  BlockTimeoutStart: UInt64;
+  BlockTimeoutStart: TTickCounter;
+  BlockCounter: Integer;
+  BytesRead: Cardinal;
 begin
   ControlPtr := GetOffsetPointer(OffsetControl);
   StatusPtr := GetOffsetPointer(OffsetStatus);
@@ -1151,14 +1164,14 @@ begin
 
   while ReadMemFast(StatusPtr) and (MaskStatusTransfer or MaskStatusDone) = 0 do
     if FFastGPIO.SystemCore.TicksInBetween(BlockTimeoutStart, FFastGPIO.SystemCore.GetTickCount) > TransferTimeout then
-      Exit(-1);
+      Exit(0);
 
   // Specify data length for reading and send "REPEATED START" signal.
   WriteMemFast(GetOffsetPointer(OffsetDataLength), BufferSize);
   WriteMemFast(ControlPtr, MaskControlEnabled or MaskControlStart or MaskControlRead);
 
   // Wait until the command is sent and one byte is received.
-  FFastGPIO.SystemCore.Delay(FTimePerByte * 2 * SizeOf(Byte));
+  FFastGPIO.SystemCore.MicroDelay(FTimePerByte * 2 * SizeOf(Byte));
 
   // Receive bytes.
   BytesRead := 0;
@@ -1174,7 +1187,7 @@ begin
     end;
 
     if not ProcessBlockCounter(BlockCounter, BlockTimeoutStart) then
-      Exit(-1);
+      Exit(0);
   end;
 
   // Retrieve any remaining bytes from FIFO buffer.
@@ -1188,14 +1201,15 @@ begin
 
   // Check status flags for any issues during read.
   if ReadMemSafe(StatusPtr) and (MaskStatusNoACK or MaskStatusTimeout) > 0 then
-    Result := -1;
+    Result := 0;
 end;
 
-function TFastI2C.WriteBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TFastI2C.WriteBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   ControlPtr, StatusPtr, DataBufferPtr: Pointer;
-  BytesWritten, BlockCounter: Integer;
-  BlockTimeoutStart: UInt64;
+  BlockTimeoutStart: TTickCounter;
+  BytesWritten: Cardinal;
+  BlockCounter: Integer;
 begin
   ControlPtr := GetOffsetPointer(OffsetControl);
   StatusPtr := GetOffsetPointer(OffsetStatus);
@@ -1234,14 +1248,14 @@ begin
     end;
 
     if not ProcessBlockCounter(BlockCounter, BlockTimeoutStart) then
-      Exit(-1);
+      Exit(0);
   end;
 
   Result := BytesWritten;
 
   // Check status flags for any issues during write.
   if ReadMemSafe(StatusPtr) and (MaskStatusNoACK or MaskStatusTimeout) > 0 then
-    Result := -1;
+    Result := 0;
 end;
 
 {$ENDREGION}
@@ -1256,7 +1270,7 @@ begin
     FFastGPIO.SetPinModeBCM(15, TPinModeEx.Alt0); // UART0_RXD
   end;
 
-  inherited Create(ASystemPath);
+  inherited Create(AFastGPIO.SystemCore, ASystemPath);
 end;
 
 destructor TDefaultUART.Destroy;

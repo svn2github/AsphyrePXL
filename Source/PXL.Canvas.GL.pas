@@ -1,16 +1,16 @@
 unit PXL.Canvas.GL;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -82,7 +82,7 @@ type
     FTextureLocation: GLuint;
     FCustomEffect: TGLCanvasEffect;
 
-    FViewNormSize: TPoint2;
+    FViewNormSize: TPoint2f;
 
     procedure PrepareArrays;
 
@@ -107,7 +107,7 @@ type
     function RequestCache(const Topology: TTopology; const VertexCount, IndexCount: Integer;
       const BlendingEffect: TBlendingEffect; const Texture: TCustomBaseTexture): Boolean;
 
-    procedure InsertVertex(const Position, TexCoord: TPoint2; const Color: TIntColor);
+    procedure InsertVertex(const Position, TexCoord: TPoint2f; const Color: TIntColor);
     procedure InsertIndex(const Index: Integer);
   protected
     function InitCanvas: Boolean; override;
@@ -122,13 +122,13 @@ type
     function GetClipRect: TIntRect; override;
     procedure SetClipRect(const Value: TIntRect); override;
   public
-    procedure PutPixel(const Point: TPoint2; const Color: TIntColor); override;
-    procedure Line(const SrcPoint, DestPoint: TPoint2; const Color: TIntColor2); override;
+    procedure PutPixel(const Point: TPoint2f; const Color: TIntColor); override;
+    procedure Line(const SrcPoint, DestPoint: TPoint2f; const Color: TColorPair); override;
 
-    procedure DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+    procedure DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
       const VertexCount, TriangleCount: Integer; const BlendingEffect: TBlendingEffect); override;
 
-    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
       const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
       const BlendingEffect: TBlendingEffect); override;
 
@@ -545,7 +545,7 @@ begin
   Result := True;
 end;
 
-procedure TGLCanvas.InsertVertex(const Position, TexCoord: TPoint2; const Color: TIntColor);
+procedure TGLCanvas.InsertVertex(const Position, TexCoord: TPoint2f; const Color: TIntColor);
 begin
   FVertexArray[FCurVertexCount].X := (Position.X - FViewNormSize.X) / FViewNormSize.X;
 
@@ -571,7 +571,7 @@ begin
   Inc(FCurIndexCount);
 end;
 
-procedure TGLCanvas.PutPixel(const Point: TPoint2; const Color: TIntColor);
+procedure TGLCanvas.PutPixel(const Point: TPoint2f; const Color: TIntColor);
 var
   BaseIndex: Integer;
 begin
@@ -580,11 +580,11 @@ begin
 
   BaseIndex:= FCurVertexCount;
 
-  InsertVertex(Point + Point2(0.5, 0.5), ZeroPoint2, Color);
+  InsertVertex(Point + Point2f(0.5, 0.5), ZeroPoint2f, Color);
   InsertIndex(BaseIndex);
 end;
 
-procedure TGLCanvas.Line(const SrcPoint, DestPoint: TPoint2; const Color: TIntColor2);
+procedure TGLCanvas.Line(const SrcPoint, DestPoint: TPoint2f; const Color: TColorPair);
 var
   BaseIndex: Integer;
 begin
@@ -593,18 +593,18 @@ begin
 
   BaseIndex:= FCurVertexCount;
 
-  InsertVertex(SrcPoint + Point2(0.5, 0.5), ZeroPoint2, Color.First);
-  InsertVertex(DestPoint + Point2(0.5, 0.5), ZeroPoint2, Color.Second);
+  InsertVertex(SrcPoint + Point2f(0.5, 0.5), ZeroPoint2f, Color.First);
+  InsertVertex(DestPoint + Point2f(0.5, 0.5), ZeroPoint2f, Color.Second);
 
   InsertIndex(BaseIndex);
   InsertIndex(BaseIndex + 1);
 end;
 
-procedure TGLCanvas.DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+procedure TGLCanvas.DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
   const VertexCount, TriangleCount: Integer; const BlendingEffect: TBlendingEffect);
 var
   SourceIndex: PLongInt;
-  SourceVertex: PPoint2;
+  SourceVertex: PPoint2f;
   SourceColor: PIntColor;
   I: Integer;
 begin
@@ -624,20 +624,20 @@ begin
 
   for I := 0 to VertexCount - 1 do
   begin
-    InsertVertex(SourceVertex^, ZeroPoint2, SourceColor^);
+    InsertVertex(SourceVertex^, ZeroPoint2f, SourceColor^);
 
     Inc(SourceVertex);
     Inc(SourceColor);
   end;
 end;
 
-procedure TGLCanvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+procedure TGLCanvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
   const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
   const BlendingEffect: TBlendingEffect);
 var
   SourceIndex: PLongInt;
-  SourceVertex: PPoint2;
-  SourceTexCoord: PPoint2;
+  SourceVertex: PPoint2f;
+  SourceTexCoord: PPoint2f;
   SourceColor: PIntColor;
   I: Integer;
 begin

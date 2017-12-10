@@ -1,16 +1,16 @@
 unit PXL.Canvas.GL.GL1;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -31,7 +31,7 @@ type
     FActiveAttributes: TCanvasAttributes;
     FActivePremultipliedAlpha: Boolean;
 
-    FViewNormSize: TPoint2;
+    FViewNormSize: TPoint2f;
 
     procedure ResetStates;
     procedure ResetScene;
@@ -41,7 +41,7 @@ type
     function RequestCache(const Topology: TTopology; const BlendingEffect: TBlendingEffect;
       const Texture: TCustomBaseTexture): Boolean;
 
-    procedure InsertVertex(const Position: TPoint2; const Color: TIntColor);
+    procedure InsertVertex(const Position: TPoint2f; const Color: TIntColor);
   protected
     function InitCanvas: Boolean; override;
     procedure DoneCanvas; override;
@@ -55,13 +55,13 @@ type
     function GetClipRect: TIntRect; override;
     procedure SetClipRect(const Value: TIntRect); override;
   public
-    procedure PutPixel(const Point: TPoint2; const Color: TIntColor); override;
-    procedure Line(const Point1, Point2: TPoint2; const Color: TIntColor2); override;
+    procedure PutPixel(const Point: TPoint2f; const Color: TIntColor); override;
+    procedure Line(const Point1, Point2f: TPoint2f; const Color: TColorPair); override;
 
-    procedure DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+    procedure DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
       const VertexCount, TriangleCount: Integer; const BlendingEffect: TBlendingEffect); override;
 
-    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
       const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
       const BlendingEffect: TBlendingEffect); override;
 
@@ -312,7 +312,7 @@ begin
   Result := True;
 end;
 
-procedure TGLCanvas.InsertVertex(const Position: TPoint2; const Color: TIntColor);
+procedure TGLCanvas.InsertVertex(const Position: TPoint2f; const Color: TIntColor);
 begin
   glColor4f(TIntColorRec(Color).Red / 255.0, TIntColorRec(Color).Green / 255.0, TIntColorRec(Color).Blue / 255.0,
     TIntColorRec(Color).Alpha / 255.0);
@@ -323,24 +323,24 @@ begin
     glVertex2f((Position.X - FViewNormSize.X) / FViewNormSize.X, (Position.Y - FViewNormSize.Y) / FViewNormSize.Y);
 end;
 
-procedure TGLCanvas.PutPixel(const Point: TPoint2; const Color: TIntColor);
+procedure TGLCanvas.PutPixel(const Point: TPoint2f; const Color: TIntColor);
 begin
   if not RequestCache(TTopology.Points, TBlendingEffect.Normal, nil) then
     Exit;
 
-  InsertVertex(Point + Point2(0.5, 0.5), Color);
+  InsertVertex(Point + Point2f(0.5, 0.5), Color);
 end;
 
-procedure TGLCanvas.Line(const Point1, Point2: TPoint2; const Color: TIntColor2);
+procedure TGLCanvas.Line(const Point1, Point2f: TPoint2f; const Color: TColorPair);
 begin
   if not RequestCache(TTopology.Lines, TBlendingEffect.Normal, nil) then
     Exit;
 
-  InsertVertex(Point1 + PXL.Types.Point2(0.5, 0.5), Color.First);
-  InsertVertex(Point2 + PXL.Types.Point2(0.5, 0.5), Color.Second);
+  InsertVertex(Point1 + PXL.Types.Point2f(0.5, 0.5), Color.First);
+  InsertVertex(Point2f + PXL.Types.Point2f(0.5, 0.5), Color.Second);
 end;
 
-procedure TGLCanvas.DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+procedure TGLCanvas.DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
   const VertexCount, TriangleCount: Integer; const BlendingEffect: TBlendingEffect);
 var
   SourceIndex: PLongInt;
@@ -353,19 +353,19 @@ begin
 
   for I := 0 to (TriangleCount * 3) - 1 do
   begin
-    InsertVertex(PPoint2(PtrInt(Vertices) + SourceIndex^ * SizeOf(TPoint2))^, PIntColor(PtrInt(Colors) +
+    InsertVertex(PPoint2f(PtrInt(Vertices) + SourceIndex^ * SizeOf(TPoint2f))^, PIntColor(PtrInt(Colors) +
       SourceIndex^ * SizeOf(TIntColor))^);
 
     Inc(SourceIndex);
   end;
 end;
 
-procedure TGLCanvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+procedure TGLCanvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
   const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
   const BlendingEffect: TBlendingEffect);
 var
   SourceIndex: PLongInt;
-  InpTexCoord: PPoint2;
+  InpTexCoord: PPoint2f;
   I: Integer;
 begin
   if not RequestCache(TTopology.Triangles, BlendingEffect, Texture) then
@@ -375,10 +375,10 @@ begin
 
   for I := 0 to (TriangleCount * 3) - 1 do
   begin
-    InpTexCoord := Pointer(PtrInt(TexCoords) + SourceIndex^ * SizeOf(TPoint2));
+    InpTexCoord := Pointer(PtrInt(TexCoords) + SourceIndex^ * SizeOf(TPoint2f));
     glTexCoord2f(InpTexCoord.X, InpTexCoord.Y);
 
-    InsertVertex(PPoint2(PtrInt(Vertices) + SourceIndex^ * SizeOf(TPoint2))^, PIntColor(PtrInt(Colors) +
+    InsertVertex(PPoint2f(PtrInt(Vertices) + SourceIndex^ * SizeOf(TPoint2f))^, PIntColor(PtrInt(Colors) +
       SourceIndex^ * SizeOf(TIntColor))^);
 
     Inc(SourceIndex);

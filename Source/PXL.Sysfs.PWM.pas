@@ -1,16 +1,16 @@
 unit PXL.Sysfs.PWM;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -38,22 +38,22 @@ type
     FPeriods: array[0..MaximumSupportedChannels - 1] of Integer;
     FDutyCycles: array[0..MaximumSupportedChannels - 1] of Integer;
 
-    procedure SetChannelBit(const Channel, Mask: Integer); inline;
-    procedure ClearChannelBit(const Channel, Mask: Integer); inline;
-    function IsChannelBitSet(const Channel, Mask: Integer): Boolean; inline;
-    function IsChannelExported(const Channel: Integer): Boolean; inline;
-    function HasChannelAbility(const Channel: Integer): Boolean; inline;
+    procedure SetChannelBit(const Channel: TPinChannel; const Mask: Cardinal); inline;
+    procedure ClearChannelBit(const Channel: TPinChannel; const Mask: Cardinal); inline;
+    function IsChannelBitSet(const Channel: TPinChannel; const Mask: Cardinal): Boolean; inline;
+    function IsChannelExported(const Channel: TPinChannel): Boolean; inline;
+    function HasChannelAbility(const Channel: TPinChannel): Boolean; inline;
 
-    procedure ExportChannel(const Channel: Integer);
-    procedure UnexportChannel(const Channel: Integer);
+    procedure ExportChannel(const Channel: TPinChannel);
+    procedure UnexportChannel(const Channel: TPinChannel);
     procedure UnexportAllChannels;
   protected
-    function GetEnabled(const Channel: Integer): Boolean; override;
-    procedure SetEnabled(const Channel: Integer; const Value: Boolean); override;
-    function GetPeriod(const Channel: Integer): Integer; override;
-    procedure SetPeriod(const Channel, Value: Integer); override;
-    function GetDutyCycle(const Channel: Integer): Integer; override;
-    procedure SetDutyCycle(const Channel, Value: Integer); override;
+    function GetEnabled(const Channel: TPinChannel): Boolean; override;
+    procedure SetEnabled(const Channel: TPinChannel; const Value: Boolean); override;
+    function GetPeriod(const Channel: TPinChannel): Cardinal; override;
+    procedure SetPeriod(const Channel: TPinChannel; const Value: Cardinal); override;
+    function GetDutyCycle(const Channel: TPinChannel): Cardinal; override;
+    procedure SetDutyCycle(const Channel: TPinChannel; const Value: Cardinal); override;
   public
     constructor Create(const ASystemPath: StdString);
     destructor Destroy; override;
@@ -89,38 +89,38 @@ begin
   inherited;
 end;
 
-procedure TSysfsPWM.SetChannelBit(const Channel, Mask: Integer);
+procedure TSysfsPWM.SetChannelBit(const Channel: TPinChannel; const Mask: Cardinal);
 begin
   FChannels[Channel] := FChannels[Channel] or Mask;
 end;
 
-procedure TSysfsPWM.ClearChannelBit(const Channel, Mask: Integer);
+procedure TSysfsPWM.ClearChannelBit(const Channel: TPinChannel; const Mask: Cardinal);
 begin
   FChannels[Channel] := FChannels[Channel] and ($FF xor Mask);
 end;
 
-function TSysfsPWM.IsChannelBitSet(const Channel, Mask: Integer): Boolean;
+function TSysfsPWM.IsChannelBitSet(const Channel: TPinChannel; const Mask: Cardinal): Boolean;
 begin
   Result := FChannels[Channel] and Mask > 0;
 end;
 
-function TSysfsPWM.IsChannelExported(const Channel: Integer): Boolean;
+function TSysfsPWM.IsChannelExported(const Channel: TPinChannel): Boolean;
 begin
   Result := IsChannelBitSet(Channel, ExportedBitmask);
 end;
 
-function TSysfsPWM.HasChannelAbility(const Channel: Integer): Boolean;
+function TSysfsPWM.HasChannelAbility(const Channel: TPinChannel): Boolean;
 begin
   Result := IsChannelBitSet(Channel, EnabledDefinedBitmask);
 end;
 
-procedure TSysfsPWM.ExportChannel(const Channel: Integer);
+procedure TSysfsPWM.ExportChannel(const Channel: TPinChannel);
 begin
   TryWriteTextToFile(FExportFileName, IntToStr(Channel));
   SetChannelBit(Channel, ExportedBitmask);
 end;
 
-procedure TSysfsPWM.UnexportChannel(const Channel: Integer);
+procedure TSysfsPWM.UnexportChannel(const Channel: TPinChannel);
 begin
   TryWriteTextToFile(FUnexportFileName, IntToStr(Channel));
   ClearChannelBit(Channel, ExportedBitmask);
@@ -135,9 +135,9 @@ begin
       UnexportChannel(I);
 end;
 
-function TSysfsPWM.GetEnabled(const Channel: Integer): Boolean;
+function TSysfsPWM.GetEnabled(const Channel: TPinChannel): Boolean;
 begin
-  if (Channel < 0) or (Channel > MaximumSupportedChannels) then
+  if Channel > MaximumSupportedChannels then
     raise EPWMInvalidChannel.Create(Format(SPWMSpecifiedChannelInvalid, [Channel]));
 
   if (not IsChannelExported(Channel)) or (not HasChannelAbility(Channel)) then
@@ -146,11 +146,11 @@ begin
   Result := IsChannelBitSet(Channel, EnabledBitmask);
 end;
 
-procedure TSysfsPWM.SetEnabled(const Channel: Integer; const Value: Boolean);
+procedure TSysfsPWM.SetEnabled(const Channel: TPinChannel; const Value: Boolean);
 var
   NeedModify: Boolean;
 begin
-  if (Channel < 0) or (Channel > MaximumSupportedChannels) then
+  if Channel > MaximumSupportedChannels then
     raise EPWMInvalidChannel.Create(Format(SPWMSpecifiedChannelInvalid, [Channel]));
 
   if not IsChannelExported(Channel) then
@@ -181,9 +181,9 @@ begin
   end;
 end;
 
-function TSysfsPWM.GetPeriod(const Channel: Integer): Integer;
+function TSysfsPWM.GetPeriod(const Channel: TPinChannel): Cardinal;
 begin
-  if (Channel < 0) or (Channel > MaximumSupportedChannels) then
+  if Channel > MaximumSupportedChannels then
     raise EPWMInvalidChannel.Create(Format(SPWMSpecifiedChannelInvalid, [Channel]));
 
   if (not IsChannelExported(Channel)) or (not HasChannelAbility(Channel)) or
@@ -193,9 +193,9 @@ begin
   Result := FPeriods[Channel];
 end;
 
-procedure TSysfsPWM.SetPeriod(const Channel, Value: Integer);
+procedure TSysfsPWM.SetPeriod(const Channel: TPinChannel; const Value: Cardinal);
 begin
-  if (Channel < 0) or (Channel > MaximumSupportedChannels) then
+  if Channel > MaximumSupportedChannels then
     raise EPWMInvalidChannel.Create(Format(SPWMSpecifiedChannelInvalid, [Channel]));
 
   if (not IsChannelExported(Channel)) or (not HasChannelAbility(Channel)) then
@@ -207,9 +207,9 @@ begin
   SetChannelBit(Channel, PeriodDefinedBitmask);
 end;
 
-function TSysfsPWM.GetDutyCycle(const Channel: Integer): Integer;
+function TSysfsPWM.GetDutyCycle(const Channel: TPinChannel): Cardinal;
 begin
-  if (Channel < 0) or (Channel > MaximumSupportedChannels) then
+  if Channel > MaximumSupportedChannels then
     raise EPWMInvalidChannel.Create(Format(SPWMSpecifiedChannelInvalid, [Channel]));
 
   if (not IsChannelExported(Channel)) or (not HasChannelAbility(Channel)) or
@@ -219,9 +219,9 @@ begin
   Result := FDutyCycles[Channel];
 end;
 
-procedure TSysfsPWM.SetDutyCycle(const Channel, Value: Integer);
+procedure TSysfsPWM.SetDutyCycle(const Channel: TPinChannel; const Value: Cardinal);
 begin
-  if (Channel < 0) or (Channel > MaximumSupportedChannels) then
+  if Channel > MaximumSupportedChannels then
     raise EPWMInvalidChannel.Create(Format(SPWMSpecifiedChannelInvalid, [Channel]));
 
   if (not IsChannelExported(Channel)) or (not HasChannelAbility(Channel)) then

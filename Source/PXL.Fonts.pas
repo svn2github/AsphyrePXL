@@ -1,16 +1,16 @@
 unit PXL.Fonts;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {< Pre-rendered bitmap fonts with Unicode support and visual effects such as border and shadow, customized spacing
    between individual letter pairs, rendering using vertical color gradient, formatted text among other features. }
 interface
@@ -51,7 +51,7 @@ type
   private type
     PStyleState = ^TStyleState;
     TStyleState = record
-      Color: TIntColor2;
+      Color: TColorPair;
       Style: Cardinal;
     end;
 
@@ -95,7 +95,7 @@ type
         Name: UniString;
 
         { Color gradient associated with the tag. }
-        Color: TIntColor2;
+        Color: TColorPair;
 
         { Text style (currently unsupported). }
         Style: Cardinal;
@@ -117,7 +117,7 @@ type
       function Find(const Name: UniString): PEntry;
     public
       { Inserts new tag with the given name, color and style to the list. }
-      procedure Insert(const Name: UniString; const Color: TIntColor2; const Style: Cardinal = 0);
+      procedure Insert(const Name: UniString; const Color: TColorPair; const Style: Cardinal = 0);
 
       { Remove all existing tags from the list. }
       procedure Clear;
@@ -156,7 +156,7 @@ type
         @param(Color Color, which should be used for rendering the letter.)
         @param(UserContext User context parameter passed to @link(DrawTextCustom).) }
     TTextEntryEvent = procedure(const Sender: TObject; const FontImage: TAtlasImage; const SourceRect: TIntRect;
-      const DestRect: TFloatRect; const Color: TIntColor4; const UserContext: Pointer);
+      const DestRect: TFloatRect; const Color: TColorRect; const UserContext: Pointer);
   private const
     StyleStackCount = 16;
     MaxEntriesCount = 65536;
@@ -184,7 +184,7 @@ type
     FSpaceWidth: VectorFloat;
     FVerticalSpace: VectorFloat;
 
-    function RecreateImage(const TextureSize: TPoint2px; const PixelFormat: TPixelFormat): Boolean;
+    function RecreateImage(const TextureSize: TPoint2i; const PixelFormat: TPixelFormat): Boolean;
     function ReadFontEntriesFromStream(const Stream: TStream): Boolean;
     function ReadTextureFromStream(const Stream: TStream; const Texture: TCustomLockableTexture;
       const DataFormat: TPixelFormat; const ActualHeight: Integer): Boolean;
@@ -198,7 +198,7 @@ type
     function ReadFromXMLNode(const Node: TXMLNode): Boolean;
 
     procedure ClearStyleStates;
-    procedure PushStyleState(const Color: TIntColor2; const Style: Cardinal = 0);
+    procedure PushStyleState(const Color: TColorPair; const Style: Cardinal = 0);
     function PeekStyleState: PStyleState;
     procedure PopStyleState;
 
@@ -210,7 +210,7 @@ type
     procedure SplitTextIntoWords(const Text: UniString);
   protected
     { Current font size that defines maximum rectangle that a letter can occupy. }
-    FSize: TPoint2px;
+    FSize: TPoint2i;
 
     { Current font image that contains pre-rendered letters. }
     FImage: TAtlasImage;
@@ -245,7 +245,7 @@ type
         @param(UserContext User context parameter that will be passed to each @code(TextEntryEvent) call.)
         @param(RestartStyling Whether the initial style of the text should be reset. This is typically needed when
           rendering multi-line text such as in case of @link(DrawTextBox).) }
-    function DrawTextCustom(const Position: TPoint2; const Text: UniString; const Color: TIntColor2;
+    function DrawTextCustom(const Position: TPoint2f; const Text: UniString; const Color: TColorPair;
       const Alpha: VectorFloat; const TextEntryEvent: TTextEntryEvent; const UserContext: Pointer;
       const RestartStyling: Boolean = True): Boolean;
 
@@ -255,7 +255,7 @@ type
         @param(Color Two colors representing vertical gradient to fill the letters with.)
         @param(Alpha A separate alpha representing transparency of the font (in addition to alpha provided in
           @code(Color)).) }
-    procedure DrawText(const Position: TPoint2; const Text: UniString; const Color: TIntColor2;
+    procedure DrawText(const Position: TPoint2f; const Text: UniString; const Color: TColorPair;
       const Alpha: VectorFloat = 1);
 
     { Draws text at the given position with specific alignment.
@@ -269,7 +269,7 @@ type
         @param(AlignToPixels Whether to align the resulting text position to start at integer location so that
           all letters are properly aligned to pixels. This may result in clearer text but can appear choppy during
           text animations (e.g. zoom in or out).) }
-    procedure DrawTextAligned(const Position: TPoint2; const Text: UniString; const Color: TIntColor2;
+    procedure DrawTextAligned(const Position: TPoint2f; const Text: UniString; const Color: TColorPair;
       const HorizAlign, VertAlign: TTextAlignment; const Alpha: VectorFloat = 1;
       const AlignToPixels: Boolean = True);
 
@@ -282,11 +282,11 @@ type
         @param(AlignToPixels Whether to align the resulting text position to start at integer location so that
           all letters are properly aligned to pixels. This may result in clearer text but can appear choppy during
           text animations (e.g. zoom in or out).) }
-    procedure DrawTextCentered(const Position: TPoint2; const Text: UniString; const Color: TIntColor2;
+    procedure DrawTextCentered(const Position: TPoint2f; const Text: UniString; const Color: TColorPair;
       const Alpha: VectorFloat = 1; const AlignToPixels: Boolean = True);
 
     { Returns total area size that given text string will occupy when rendered. }
-    function TextExtent(const Text: UniString): TPoint2;
+    function TextExtent(const Text: UniString): TPoint2f;
 
     { Returns total area width that given text string will occupy when rendered. }
     function TextWidth(const Text: UniString): VectorFloat;
@@ -295,7 +295,7 @@ type
     function TextHeight(const Text: UniString): VectorFloat;
 
     { Returns total area size (rounded to nearest integer) that given text string will occupy when rendered. }
-    function TextExtentInt(const Text: UniString): TPoint2px;
+    function TextExtentInt(const Text: UniString): TPoint2i;
 
     { Returns total area width (rounded to nearest integer) that given text string will occupy when rendered. }
     function TextWidthInt(const Text: UniString): VectorInt;
@@ -311,8 +311,8 @@ type
         @param(Color Two colors representing vertical gradient to fill the letters with.)
         @param(Alpha A separate alpha representing transparency of the font (in addition to alpha provided in
           @code(Color)).) }
-    procedure DrawTextBox(const TopLeft, BoxSize, ParagraphShift: TPoint2; const Text: UniString;
-      const Color: TIntColor2; const Alpha: VectorFloat = 1);
+    procedure DrawTextBox(const TopLeft, BoxSize, ParagraphShift: TPoint2f; const Text: UniString;
+      const Color: TColorPair; const Alpha: VectorFloat = 1);
 
     { Provides information regarding individual letter position and sizes for the given text string when rendered.
       This can be useful for components such as text edit box, for highlighting and selecting different letters. }
@@ -391,7 +391,7 @@ type
     property StyleTags: TStyleTags read FStyleTags write FStyleTags;
 
     { Font size that defines maximum rectangle that a letter can occupy. }
-    property Size: TPoint2px read FSize;
+    property Size: TPoint2i read FSize;
 
     { Font width that defines maximum width in pixels that a letter can occupy. }
     property Width: VectorInt read FSize.X;
@@ -580,7 +580,7 @@ begin
 {$ENDIF}
 end;
 
-procedure TBitmapFont.TStyleTags.Insert(const Name: UniString; const Color: TIntColor2; const Style: Cardinal);
+procedure TBitmapFont.TStyleTags.Insert(const Name: UniString; const Color: TColorPair; const Style: Cardinal);
 var
   Index: Integer;
 begin
@@ -741,7 +741,7 @@ begin
   if (Code1 <= 255) and (Code2 <= 255) then
     Exit(FHashArray[Code1, Code2]);
 
-  Index := FExtArray.IndexOf(Point2px(Code1, Code2));
+  Index := FExtArray.IndexOf(Point2i(Code1, Code2));
 
   if Index <> -1 then
     Result := PtrInt(FExtArray[Index].Data)
@@ -751,7 +751,7 @@ end;
 
 procedure TBitmapFont.TKernings.Spec(const Code1, Code2: Integer; Shift: Integer);
 var
-  Pos: TPoint2px;
+  Pos: TPoint2i;
   Index: Integer;
 begin
   if (Code1 < 0) or (Code2 < 0) then
@@ -765,7 +765,7 @@ begin
     Exit;
   end;
 
-  Pos := Point2px(Code1, Code2);
+  Pos := Point2i(Code1, Code2);
 
   Index := FExtArray.IndexOf(Pos);
   if Index = -1 then
@@ -783,10 +783,10 @@ end;
 {$REGION 'TBitmapFont Callbacks'}
 
 procedure DrawTextCallback(const Sender: TObject; const FontImage: TAtlasImage; const SourceRect: TIntRect;
-  const DestRect: TFloatRect; const Color: TIntColor4; const UserContext: Pointer);
+  const DestRect: TFloatRect; const Color: TColorRect; const UserContext: Pointer);
 begin
-  TCustomCanvas(UserContext).UseImagePx(FontImage, FloatRect4(SourceRect));
-  TCustomCanvas(UserContext).TexQuad(FloatRect4(DestRect), Color);
+  TCustomCanvas(UserContext).UseImagePx(FontImage, Quad(SourceRect));
+  TCustomCanvas(UserContext).TexQuad(Quad(DestRect), Color);
 end;
 
 {$ENDREGION}
@@ -824,7 +824,7 @@ begin
   inherited;
 end;
 
-function TBitmapFont.RecreateImage(const TextureSize: TPoint2px; const PixelFormat: TPixelFormat): Boolean;
+function TBitmapFont.RecreateImage(const TextureSize: TPoint2i; const PixelFormat: TPixelFormat): Boolean;
 var
   Texture: TCustomLockableTexture;
 begin
@@ -996,7 +996,7 @@ end;
 function TBitmapFont.ReadFontImageFromStream(const Stream: TStream; const PixelFormat: TPixelFormat): Boolean;
 var
   SkippedLines, ActualHeight: Integer;
-  TextureSize: TPoint2px;
+  TextureSize: TPoint2i;
   DataFormat, TextureFormat: TPixelFormat;
   Texture: TCustomLockableTexture;
 begin
@@ -1354,25 +1354,25 @@ end;
 {$IFDEF IncludeSystemFont}
 function TBitmapFont.LoadSystemFont(const FontImage: TSystemFontImage; const PixelFormat: TPixelFormat): Boolean;
 var
-  FontSize: TPoint2px;
+  FontSize: TPoint2i;
   Texture: TCustomLockableTexture;
   I: Integer;
 begin
   if FontImage = TSystemFontImage.Font9x8 then
-    FontSize := Point2px(144, 128)
+    FontSize := Point2i(144, 128)
   else
-    FontSize := Point2px(128, 128);
+    FontSize := Point2i(128, 128);
 
   FillChar(FEntries, SizeOf(FEntries), 0);
 
   if FontImage = TSystemFontImage.Font9x8 then
   begin
-    FSize := Point2px(9, 8);
+    FSize := Point2i(9, 8);
     FInterleave := 0;
   end
   else
   begin
-    FSize := Point2px(8, 8);
+    FSize := Point2i(8, 8);
     FInterleave := 1;
   end;
 
@@ -1422,7 +1422,7 @@ begin
   FStyleStateCount := 0;
 end;
 
-procedure TBitmapFont.PushStyleState(const Color: TIntColor2; const Style: Cardinal);
+procedure TBitmapFont.PushStyleState(const Color: TColorPair; const Style: Cardinal);
 begin
   if FStyleStateCount < StyleStackCount then
   begin
@@ -1513,7 +1513,7 @@ begin
   end;
 end;
 
-function TBitmapFont.DrawTextCustom(const Position: TPoint2; const Text: UniString; const Color: TIntColor2;
+function TBitmapFont.DrawTextCustom(const Position: TPoint2f; const Text: UniString; const Color: TColorPair;
   const Alpha: VectorFloat; const TextEntryEvent: TTextEntryEvent; const UserContext: Pointer;
   const RestartStyling: Boolean): Boolean;
 var
@@ -1521,7 +1521,7 @@ var
   CharIndex, CharCode, PrevCode, IntAlpha: Integer;
   DrawPos: VectorFloat;
   DrawRect: TFloatRect;
-  CharColor: TIntColor2;
+  CharColor: TColorPair;
   Style: PStyleState;
 begin
   if (FImage = nil) or (not Assigned(TextEntryEvent)) then
@@ -1572,7 +1572,7 @@ begin
       CharEntry.MapHeight) / FSize.Y), IntAlpha);
 
     TextEntryEvent(Self, FImage, IntRect(CharEntry.MapLeft, CharEntry.MapTop, CharEntry.MapWidth,
-      CharEntry.MapHeight), DrawRect, IntColor4(CharColor.First, CharColor.First, CharColor.Second,
+      CharEntry.MapHeight), DrawRect, ColorRect(CharColor.First, CharColor.First, CharColor.Second,
       CharColor.Second) , UserContext);
 
     Inc(CharIndex);
@@ -1585,7 +1585,7 @@ begin
   Result := True;
 end;
 
-function TBitmapFont.TextExtent(const Text: UniString): TPoint2;
+function TBitmapFont.TextExtent(const Text: UniString): TPoint2f;
 var
   CharEntry: PLetterEntry;
   CharIndex, CharCode, PrevCode: Integer;
@@ -1688,9 +1688,9 @@ begin
   Result := TextExtent(Text).Y;
 end;
 
-function TBitmapFont.TextExtentInt(const Text: UniString): TPoint2px;
+function TBitmapFont.TextExtentInt(const Text: UniString): TPoint2i;
 var
-  Ext: TPoint2;
+  Ext: TPoint2f;
 begin
   Ext := TextExtent(Text);
 
@@ -1708,22 +1708,22 @@ begin
   Result := TextExtentInt(Text).Y;
 end;
 
-procedure TBitmapFont.DrawText(const Position: TPoint2; const Text: UniString; const Color: TIntColor2;
+procedure TBitmapFont.DrawText(const Position: TPoint2f; const Text: UniString; const Color: TColorPair;
   const Alpha: VectorFloat);
 begin
   if FCanvas <> nil then
     DrawTextCustom(Position, Text, Color, Alpha, DrawTextCallback, FCanvas);
 end;
 
-procedure TBitmapFont.DrawTextAligned(const Position: TPoint2; const Text: UniString; const Color: TIntColor2;
+procedure TBitmapFont.DrawTextAligned(const Position: TPoint2f; const Text: UniString; const Color: TColorPair;
   const HorizAlign, VertAlign: TTextAlignment; const Alpha: VectorFloat; const AlignToPixels: Boolean);
 var
-  DrawAt, TextSize: TPoint2;
+  DrawAt, TextSize: TPoint2f;
 begin
   if (HorizAlign = TTextAlignment.Start) and (VertAlign = TTextAlignment.Start) then
   begin
     if AlignToPixels then
-      DrawAt := Point2(Round(Position.X), Round(Position.Y))
+      DrawAt := Point2f(Round(Position.X), Round(Position.Y))
     else
       DrawAt := Position;
 
@@ -1757,14 +1757,14 @@ begin
   end;
 
   if AlignToPixels then
-    DrawAt := Point2(Round(DrawAt.X), Round(DrawAt.Y))
+    DrawAt := Point2f(Round(DrawAt.X), Round(DrawAt.Y))
   else
     DrawAt := Position;
 
   DrawText(DrawAt, Text, Color, Alpha);
 end;
 
-procedure TBitmapFont.DrawTextCentered(const Position: TPoint2; const Text: UniString; const Color: TIntColor2;
+procedure TBitmapFont.DrawTextCentered(const Position: TPoint2f; const Text: UniString; const Color: TColorPair;
   const Alpha: VectorFloat; const AlignToPixels: Boolean);
 begin
   DrawTextAligned(Position, Text, Color, TTextAlignment.Middle, TTextAlignment.Middle, Alpha, AlignToPixels);
@@ -1838,13 +1838,13 @@ begin
       AddWord(WordText, ParagraphIndex);
 end;
 
-procedure TBitmapFont.DrawTextBox(const TopLeft, BoxSize, ParagraphShift: TPoint2; const Text: UniString;
-  const Color: TIntColor2; const Alpha: VectorFloat);
+procedure TBitmapFont.DrawTextBox(const TopLeft, BoxSize, ParagraphShift: TPoint2f; const Text: UniString;
+  const Color: TColorPair; const Alpha: VectorFloat);
 var
   ParagraphIndex, NextParagraphIndex: Integer;
   WordIndex, LastWordIndexInLine, WordCountInLine, SubIndex: Integer;
   PredWordsInLineWidth, TotalWordsInLineWidth, TotalWhiteSpace, RemainingLineWidth, BlankSpacePerWord: VectorFloat;
-  Position, CurTextSize: TPoint2;
+  Position, CurTextSize: TPoint2f;
   LineHeight, DrawOffset: VectorFloat;
 begin
   if FCanvas = nil then
@@ -1924,8 +1924,8 @@ begin
 
     for SubIndex := WordIndex to WordIndex + WordCountInLine - 1 do
     begin
-      DrawTextCustom(Point2(Position.X + Round(DrawOffset), Position.Y), FParagraphWords[SubIndex].WordText,
-        IntColorWhite2, Alpha, DrawTextCallback, FCanvas, False);
+      DrawTextCustom(Point2f(Position.X + Round(DrawOffset), Position.Y), FParagraphWords[SubIndex].WordText,
+        ColorPairWhite, Alpha, DrawTextCallback, FCanvas, False);
 
       CurTextSize := TextExtent(FParagraphWords[SubIndex].WordText);
 

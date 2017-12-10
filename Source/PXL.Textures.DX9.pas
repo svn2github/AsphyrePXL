@@ -1,16 +1,16 @@
 unit PXL.Textures.DX9;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -71,7 +71,7 @@ type
     function DoUnlock: Boolean; override;
 
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
   public
     function Bind(const Channel: Integer): Boolean; override;
 
@@ -114,7 +114,7 @@ type
     procedure DoFinalize; override;
 
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
   public
     function Bind(const Channel: Integer): Boolean; override;
 
@@ -493,13 +493,13 @@ begin
 end;
 
 function TDX9LockableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   SysTexture: TDX9SystemTexture;
 begin
   if Source is TDX9DrawableTexture then
   begin
-    if (Size <> Source.Size) or (DestPos <> ZeroPoint2px) or (SourceRect.TopLeft <> ZeroPoint2px) or
+    if (Size <> Source.Size) or (DestPos <> ZeroPoint2i) or (SourceRect.TopLeft <> ZeroPoint2i) or
       (SourceRect.Size <> Source.Size) or (FPixelFormat <> Source.PixelFormat) or
       (FContext.Support <> TD3D9Support.Vista) then
     begin // Retrieve render target data to intermediary system texture.
@@ -771,7 +771,7 @@ begin
 end;
 
 function TDX9DrawableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   SysTexture: TDX9SystemTexture;
   WinSourceRect, WinDestRect: Windows.TRect;
@@ -790,7 +790,7 @@ begin
         if (not SysTexture.Initialize) or (SysTexture.PixelFormat <> FPixelFormat) then
           Exit(False);
 
-        if ((DestPos <> ZeroPoint2px) or (SourceRect.TopLeft <> ZeroPoint2px) or
+        if ((DestPos <> ZeroPoint2i) or (SourceRect.TopLeft <> ZeroPoint2i) or
           (SourceRect.Size <> SysTexture.Size)) and (not SysTexture.Clear) then
           Exit(False);
 

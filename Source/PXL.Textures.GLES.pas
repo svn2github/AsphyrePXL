@@ -1,16 +1,16 @@
 unit PXL.Textures.GLES;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -40,7 +40,7 @@ type
     procedure DoFinalize; override;
 
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
   public
     constructor Create(const ADevice: TCustomDevice; const AutoSubscribe: Boolean); override;
     destructor Destroy; override;
@@ -84,7 +84,7 @@ type
     procedure DoFinalize; override;
 
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
   public
     function Bind(const Channel: Integer): Boolean; override;
 
@@ -395,7 +395,7 @@ begin
 end;
 
 function TGLESLockableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   SavedFrameBuffer: GLuint;
   TempBuffer, TempScanline: Pointer;
@@ -407,7 +407,7 @@ begin
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, @SavedFrameBuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, TGLESDrawableTexture(Source).FFrameBuffer);
     try
-      if (Size <> Source.Size) or (DestPos <> ZeroPoint2px) or (SourceRect.TopLeft <> ZeroPoint2px) or
+      if (Size <> Source.Size) or (DestPos <> ZeroPoint2i) or (SourceRect.TopLeft <> ZeroPoint2i) or
         (SourceRect.Size <> Source.Size) or (not (FPixelFormat in [TPixelFormat.A8B8G8R8, TPixelFormat.X8B8G8R8])) then
       begin
         CopyWidth := SourceRect.Width;
@@ -689,7 +689,7 @@ begin
 end;
 
 function TGLESDrawableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   SavedFrameBuffer: GLuint;
   TempBuffer, TempScanline: Pointer;
@@ -701,7 +701,7 @@ begin
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, FTexture);
     try
-      if (Size <> Source.Size) or (DestPos <> ZeroPoint2px) or (SourceRect.TopLeft <> ZeroPoint2px) or
+      if (Size <> Source.Size) or (DestPos <> ZeroPoint2i) or (SourceRect.TopLeft <> ZeroPoint2i) or
         (SourceRect.Size <> Source.Size) or (TGLESLockableTexture(Source).PixelFormat <> TPixelFormat.A8B8G8R8) then
       begin
         CopyWidth := SourceRect.Width;

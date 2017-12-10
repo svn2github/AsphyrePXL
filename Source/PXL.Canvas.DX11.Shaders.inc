@@ -1,16 +1,3 @@
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
-
 const
   CanvasSolid: array[0..575] of Byte = (
     $44, $58, $42, $43, $B3, $13, $73, $50, $D1, $96, $26, $9B, $FB, $1E, $29, $24, $03, $9D, $D1, $0D, $01, $00, $00,

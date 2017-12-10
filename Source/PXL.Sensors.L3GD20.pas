@@ -1,16 +1,16 @@
 unit PXL.Sensors.L3GD20;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -33,19 +33,19 @@ type
     procedure TestChipID;
     procedure Configure;
 
-    function GetGyroscope: TVector3;
+    function GetGyroscope: TVector3f;
   public
     constructor Create(const ADataPort: TCustomPortI2C;  const AAddress: Integer = DefaultAddress;
       const ASensitivity: TSensitivity = TSensitivity.Scale245);
 
-    function GetGyroscopeRaw: TVector3px;
+    function GetGyroscopeRaw: TVector3i;
     function GetTemperatureRaw: Integer;
 
     property DataPort: TCustomPortI2C read FDataPort;
     property Address: Integer read FAddress;
     property Sensitivity: TSensitivity read FSensitivity;
 
-    property Gyroscope: TVector3 read GetGyroscope;
+    property Gyroscope: TVector3f read GetGyroscope;
     property Temperature: Integer read GetTemperatureRaw;
   end;
 
@@ -110,7 +110,7 @@ begin
   end;
 end;
 
-function TSensorL3GD20.GetGyroscopeRaw: TVector3px;
+function TSensorL3GD20.GetGyroscopeRaw: TVector3i;
 var
   Values: array[0..5] of Byte;
 begin
@@ -139,9 +139,9 @@ begin
   Result := Value;
 end;
 
-function TSensorL3GD20.GetGyroscope: TVector3;
+function TSensorL3GD20.GetGyroscope: TVector3f;
 var
-  ValueRaw: TVector3px;
+  ValueRaw: TVector3i;
 begin
   ValueRaw := GetGyroscopeRaw;
 

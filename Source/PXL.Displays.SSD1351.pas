@@ -1,16 +1,16 @@
 unit PXL.Displays.SSD1351;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -21,10 +21,10 @@ uses
 type
   TDisplay = class(TCustomDrivenDisplay)
   public const
-    OLED128x128: TPoint2px = (X: 128; Y: 128);
-    OLED128x96: TPoint2px = (X: 128; Y: 96);
+    OLED128x128: TPoint2i = (X: 128; Y: 128);
+    OLED128x96: TPoint2i = (X: 128; Y: 96);
   private
-    FScreenSize: TPoint2px;
+    FScreenSize: TPoint2i;
 
     procedure SetWriteWindow(const WriteRect: TIntRect);
   protected
@@ -36,10 +36,10 @@ type
 
     function GetScanline(const Index: Integer): Pointer; override;
   public
-    constructor Create(const AScreenSize: TPoint2px; const AGPIO: TCustomGPIO; const ADataPort: TCustomDataPort;
+    constructor Create(const AScreenSize: TPoint2i; const AGPIO: TCustomGPIO; const ADataPort: TCustomDataPort;
       const APinDC: Integer; const APinRST: Integer = -1);
 
-    property ScreenSize: TPoint2px read FScreenSize;
+    property ScreenSize: TPoint2i read FScreenSize;
   end;
 
 implementation
@@ -69,7 +69,7 @@ const
   CMD_MUX_RATIO = $CA;
   CMD_COMMAND_LOCK = $FD;
 
-constructor TDisplay.Create(const AScreenSize: TPoint2px; const AGPIO: TCustomGPIO; const ADataPort: TCustomDataPort;
+constructor TDisplay.Create(const AScreenSize: TPoint2i; const AGPIO: TCustomGPIO; const ADataPort: TCustomDataPort;
   const APinDC: Integer; const APinRST: Integer);
 begin
   FScreenSize := AScreenSize;

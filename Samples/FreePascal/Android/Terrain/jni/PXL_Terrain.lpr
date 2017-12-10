@@ -1,16 +1,16 @@
 library PXL_Terrain;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {
   This example illustrates how to handle Android touch events, draw text and render isometric landscape according
   to scale of the actual device.
@@ -28,14 +28,14 @@ var
   EngineImages: TAtlasImages = nil;
   EngineFonts: TBitmapFonts = nil;
 
-  DisplaySize: TPoint2px = (X: 0; Y: 0);
+  DisplaySize: TPoint2i = (X: 0; Y: 0);
 
   FontSegoe: Integer = -1;
   ImageTerrain: Integer = -1;
 
   Landscape: TLandscape = nil;
   DragScroll: TDragScroll = nil;
-  MapTileSize: TPoint2px;
+  MapTileSize: TPoint2i;
 
 procedure ApplicationCreate;
 begin
@@ -71,7 +71,7 @@ begin
   DragScroll := TDragScroll.Create;
 
   DragScroll.DeviceScale := Application.DisplayScale;
-  DragScroll.SetPosition(Point2(MapTileSize.X * 20.0, MapTileSize.Y * 24.0));
+  DragScroll.SetPosition(Point2f(MapTileSize.X * 20.0, MapTileSize.Y * 24.0));
 end;
 
 procedure DestroyResources;
@@ -98,7 +98,7 @@ end;
 procedure DrawLandscape;
 var
   I, J, DeltaX: Integer;
-  ViewPos, IsoPos, DrawPos: TPoint2px;
+  ViewPos, IsoPos, DrawPos: TPoint2i;
   Heights: array[0..3] of Integer;
 begin
   ViewPos := DragScroll.ViewPos;
@@ -131,14 +131,14 @@ begin
 
         EngineCanvas.UseImage(EngineImages[ImageTerrain]);
 
-        EngineCanvas.TexQuad(FloatRect4(
+        EngineCanvas.TexQuad(Quad(
           { Isometric Tile corner positions }
-          Point2(DrawPos.X, (DrawPos.Y + (MapTileSize.Y div 2)) - Heights[0]),
-          Point2(DrawPos.X + (MapTileSize.X div 2), DrawPos.Y - Heights[1]),
-          Point2(DrawPos.X + MapTileSize.X, (DrawPos.Y + (MapTileSize.Y div 2)) - Heights[3]),
-          Point2(DrawPos.X + (MapTileSize.X div 2), (DrawPos.Y + MapTileSize.Y) - Heights[2])),
+          Point2f(DrawPos.X, (DrawPos.Y + (MapTileSize.Y div 2)) - Heights[0]),
+          Point2f(DrawPos.X + (MapTileSize.X div 2), DrawPos.Y - Heights[1]),
+          Point2f(DrawPos.X + MapTileSize.X, (DrawPos.Y + (MapTileSize.Y div 2)) - Heights[3]),
+          Point2f(DrawPos.X + (MapTileSize.X div 2), (DrawPos.Y + MapTileSize.Y) - Heights[2])),
           { Isometric Tile corner lights }
-          IntColor4(
+          ColorRect(
             IntColorGray(Landscape.GetTileLightSafe(IsoPos, 0)),
             IntColorGray(Landscape.GetTileLightSafe(IsoPos, 1)),
             IntColorGray(Landscape.GetTileLightSafe(IsoPos, 3)),
@@ -150,7 +150,7 @@ end;
 
 procedure PaintScreen;
 var
-  DrawPos: TPoint2px;
+  DrawPos: TPoint2i;
   VertShift: VectorInt;
 begin
   DrawLandscape;
@@ -161,31 +161,31 @@ begin
   EngineFonts[FontSegoe].Scale := Application.DisplayScale / 2.0;
 
   VertShift := Round(20.0 * Application.DisplayScale);
-  DrawPos := Point2ToPx(Point2(8.0, 4.0) * Application.DisplayScale);
+  DrawPos := (Point2f(8.0, 4.0) * Application.DisplayScale).ToInt;
 
   EngineFonts[FontSegoe].DrawText(
     DrawPos,
     'FPS: ' + IntToStr(Application.Timer.FrameRate),
-    IntColor2($FFFFE887, $FFFF0000));
+    ColorPair($FFFFE887, $FFFF0000));
 
   Inc(DrawPos.Y, VertShift);
 
   EngineFonts[FontSegoe].DrawText(
     DrawPos,
     'Technology: ' + GetFullDeviceTechString(Application),
-    IntColor2($FFE8FFAA, $FF12C312));
+    ColorPair($FFE8FFAA, $FF12C312));
 
   Inc(DrawPos.Y, VertShift);
 
   EngineFonts[FontSegoe].DrawText(
     DrawPos,
     'Display Scale: ' + FloatToStr(Application.DisplayScale),
-    IntColor2($FFDAF5FF, $FF4E9DE5));
+    ColorPair($FFDAF5FF, $FF4E9DE5));
 
   EngineFonts[FontSegoe].DrawTextAligned(
-    Point2(DisplaySize.X * 0.5, DisplaySize.Y * 0.9),
+    Point2f(DisplaySize.X * 0.5, DisplaySize.Y * 0.9),
     'Touch and drag to scroll the map.',
-    IntColor2($FFFFFFFF, $FF808080), TTextAlignment.Middle, TTextAlignment.Final);
+    ColorPair($FFFFFFFF, $FF808080), TTextAlignment.Middle, TTextAlignment.Final);
 end;
 
 procedure ApplicationPaint;

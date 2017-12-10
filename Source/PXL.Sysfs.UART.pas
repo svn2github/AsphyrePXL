@@ -1,16 +1,16 @@
 unit PXL.Sysfs.UART;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -20,41 +20,39 @@ uses
 
 type
   TSysfsUART = class(TCustomPortUART)
-  public const
-    MaxSupportedBaudRate = 115200;
   private
     FSystemPath: StdString;
     FHandle: TUntypedHandle;
 
-    FBaudRate: Integer;
-    FBitsPerWord: Integer;
+    FBaudRate: Cardinal;
+    FBitsPerWord: TBitsPerWord;
     FParity: TParity;
     FStopBits: TStopBits;
 
     function GetBaudRateCode: Integer;
     procedure UpdateCommState;
   protected
-    function GetBaudRate: Integer; override;
-    procedure SetBaudRate(const Value: Integer); override;
-    function GetBitsPerWord: Integer; override;
-    procedure SetBitsPerWord(const Value: Integer); override;
+    function GetBaudRate: Cardinal; override;
+    procedure SetBaudRate(const Value: Cardinal); override;
+    function GetBitsPerWord: TBitsPerWord; override;
+    procedure SetBitsPerWord(const Value: TBitsPerWord); override;
     function GetParity: TParity; override;
     procedure SetParity(const Value: TParity); override;
     function GetStopBits: TStopBits; override;
     procedure SetStopBits(const Value: TStopBits); override;
   public
-    constructor Create(const ASystemPath: StdString);
+    constructor Create(const ASystemCore: TCustomSystemCore; const ASystemPath: StdString);
     destructor Destroy; override;
 
-    function Read(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function Write(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
+    function Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
     procedure Flush; override;
 
     property SystemPath: StdString read FSystemPath;
     property Handle: TUntypedHandle read FHandle;
 
-    property BaudRate: Integer read FBaudRate write SetBaudRate;
-    property BitsPerWord: Integer read FBitsPerWord write SetBitsPerWord;
+    property BaudRate: Cardinal read FBaudRate write SetBaudRate;
+    property BitsPerWord: TBitsPerWord read FBitsPerWord write SetBitsPerWord;
     property Parity: TParity read FParity write SetParity;
     property StopBits: TStopBits read FStopBits write SetStopBits;
   end;
@@ -77,9 +75,9 @@ implementation
 uses
   SysUtils, TermIO, BaseUnix;
 
-constructor TSysfsUART.Create(const ASystemPath: StdString);
+constructor TSysfsUART.Create(const ASystemCore: TCustomSystemCore; const ASystemPath: StdString);
 begin
-  inherited Create;
+  inherited Create(ASystemCore);
 
   FSystemPath := ASystemPath;
 
@@ -90,7 +88,7 @@ begin
     raise ESysfsUARTOpen.Create(Format(SCannotOpenFileForUART, [FSystemPath]));
   end;
 
-  FBaudRate := MaxSupportedBaudRate;
+  FBaudRate := DefaultUARTBaudRate;
   FBitsPerWord := 8;
 
   UpdateCommState;
@@ -166,12 +164,12 @@ begin
     raise ESysfsUARTSetAttributes.Create(SCannotSetUARTAttributes);
 end;
 
-function TSysfsUART.GetBaudRate: Integer;
+function TSysfsUART.GetBaudRate: Cardinal;
 begin
   Result := FBaudRate;
 end;
 
-procedure TSysfsUART.SetBaudRate(const Value: Integer);
+procedure TSysfsUART.SetBaudRate(const Value: Cardinal);
 begin
   if FBaudRate <> Value then
   begin
@@ -180,12 +178,12 @@ begin
   end;
 end;
 
-function TSysfsUART.GetBitsPerWord: Integer;
+function TSysfsUART.GetBitsPerWord: TBitsPerWord;
 begin
   Result := FBitsPerWord;
 end;
 
-procedure TSysfsUART.SetBitsPerWord(const Value: Integer);
+procedure TSysfsUART.SetBitsPerWord(const Value: TBitsPerWord);
 begin
   if FBitsPerWord <> Value then
   begin
@@ -222,7 +220,7 @@ begin
   end;
 end;
 
-function TSysfsUART.Read(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSysfsUART.Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   BytesRead: Integer;
 begin
@@ -233,10 +231,10 @@ begin
   if BytesRead < 0 then
     Exit(0);
 
-  Result := BytesRead;
+  Result := Cardinal(BytesRead);
 end;
 
-function TSysfsUART.Write(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSysfsUART.Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   BytesWritten: Integer;
 begin
@@ -247,7 +245,7 @@ begin
   if BytesWritten < 0 then
     Exit(0);
 
-  Result := BytesWritten;
+  Result := Cardinal(BytesWritten);
 end;
 
 procedure TSysfsUART.Flush;

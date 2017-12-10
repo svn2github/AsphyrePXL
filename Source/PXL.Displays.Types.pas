@@ -1,16 +1,16 @@
 unit PXL.Displays.Types;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -129,10 +129,10 @@ type
     procedure AdjustPosition(var X, Y: Integer); inline;
   protected
     FPhysicalOrientation: TOrientation;
-    FPhysicalSize: TPoint2px;
+    FPhysicalSize: TPoint2i;
 
     FLogicalOrientation: TOrientation;
-    FLogicalSize: TPoint2px;
+    FLogicalSize: TPoint2i;
 
     FScreenBufferSize: Integer;
     FScreenBuffer: Pointer;
@@ -161,10 +161,10 @@ type
     procedure Clear; virtual;
 
     property PhysicalOrientation: TOrientation read FPhysicalOrientation;
-    property PhysicalSize: TPoint2px read FPhysicalSize;
+    property PhysicalSize: TPoint2i read FPhysicalSize;
 
     property LogicalOrientation: TOrientation read FLogicalOrientation write SetLogicalOrientation;
-    property LogicalSize: TPoint2px read FLogicalSize;
+    property LogicalSize: TPoint2i read FLogicalSize;
 
     property ScreenBuffer: Pointer read FScreenBuffer;
     property ScreenBufferSize: Integer read FScreenBufferSize;
@@ -337,7 +337,7 @@ begin
 
   if FDisplay <> nil then
   begin
-    FClipRect := IntRect(ZeroPoint2px, FDisplay.LogicalSize);
+    FClipRect := IntRect(ZeroPoint2i, FDisplay.LogicalSize);
     FOrientationChangedHandle := FDisplay.OnOrientationChanged.Subscribe(OnOrientationChanged);
   end;
 end;
@@ -362,7 +362,7 @@ end;
 procedure TDisplayCanvas.OnOrientationChanged(const Sender: TObject; const EventData, UserData: Pointer);
 begin
   if Sender is TCustomDisplay then
-    FClipRect := IntRect(ZeroPoint2px, TCustomDisplay(Sender).LogicalSize);
+    FClipRect := IntRect(ZeroPoint2i, TCustomDisplay(Sender).LogicalSize);
 end;
 
 {$ENDREGION}
@@ -443,7 +443,7 @@ begin
     FAdjustedOrientation := TOrientation(AdjustedValue);
 
     if FAdjustedOrientation in [TOrientation.Portrait, TOrientation.InversePortrait] then
-      FLogicalSize := Point2px(FPhysicalSize.Y, FPhysicalSize.X)
+      FLogicalSize := Point2i(FPhysicalSize.Y, FPhysicalSize.X)
     else
       FLogicalSize := FPhysicalSize;
 
@@ -496,7 +496,7 @@ end;
 
 procedure TCustomDisplay.Present;
 begin
-  Present(IntRect(ZeroPoint2px, FLogicalSize));
+  Present(IntRect(ZeroPoint2i, FLogicalSize));
 end;
 
 procedure TCustomDisplay.Clear;

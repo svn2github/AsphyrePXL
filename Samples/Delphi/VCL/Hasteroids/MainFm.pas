@@ -1,16 +1,16 @@
 unit MainFm;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -107,7 +107,7 @@ begin
   DeviceProvider := StartForm.CreateProvider;
   EngineDevice := DeviceProvider.CreateDevice as TCustomSwapChainDevice;
 
-  DisplaySize := Point2px(ClientWidth, ClientHeight);
+  DisplaySize := Point2i(ClientWidth, ClientHeight);
   EngineDevice.SwapChains.Add(Handle, DisplaySize, 0, StartForm.VSync);
 
   if not EngineDevice.Initialize then
@@ -222,7 +222,7 @@ end;
 
 procedure TMainForm.FormResize(Sender: TObject);
 begin
-  DisplaySize := Point2px(ClientWidth, ClientHeight);
+  DisplaySize := Point2i(ClientWidth, ClientHeight);
 
   if (EngineDevice <> nil) and (EngineTimer <> nil) and EngineDevice.Initialized then
   begin
@@ -269,7 +269,7 @@ begin
 
       if (Random(5) = 0) and (not StartingUp) then
       begin
-        TText.Create(PEngine2, 'Try this one!!!', 2, 320, 280, 256, $FFFF0000).Velocity := Point2(0.0, 0.5);
+        TText.Create(PEngine2, 'Try this one!!!', 2, 320, 280, 256, $FFFF0000).Velocity := Point2f(0.0, 0.5);
         TShip(OEngine1[ShipID]).Armour := 15;
         TShip(OEngine1[ShipID]).Life := 1;
         Level := 6;
@@ -370,7 +370,7 @@ begin
       for I := 0 to 3 do
       begin
         EngineCanvas.UseImageRegion(EngineImages[ImageBackground], Index);
-        EngineCanvas.TexQuad(FloatRect4((I * 160.0), (J * 240.0), 160.0, 240.0), IntColorWhite4);
+        EngineCanvas.TexQuad(Quad((I * 160.0), (J * 240.0), 160.0, 240.0), ColorRectWhite);
         Inc(Index);
       end;
   end;
@@ -390,21 +390,21 @@ begin
     for I := 0 to TShip(OEngine1[ShipID]).Armour - 1 do
     begin
       EngineCanvas.UseImage(EngineImages[ImageShipArmor]);
-      EngineCanvas.TexQuad(FloatRect4(640.0 - 32.0 - (I * 32.0), 4.0, 32.0, 32.0), IntColorWhite4);
+      EngineCanvas.TexQuad(Quad(640.0 - 32.0 - (I * 32.0), 4.0, 32.0, 32.0), ColorRectWhite);
     end;
 
     // show player's life
     for I := 0 to TShip(OEngine1[ShipID]).Life - 1 do
     begin
       EngineCanvas.UseImageRegion(EngineImages[ImageShip], 2);
-      EngineCanvas.TexQuad(FloatRect4((I * 32) + 8, 4, 32, 32), IntColorWhite4);
+      EngineCanvas.TexQuad(Quad((I * 32) + 8, 4, 32, 32), ColorRectWhite);
     end;
   end;
 
   if not StartingUp then
   begin
     EngineCanvas.UseImageRegion(EngineImages[ImageCShineLogo], LogoAnimIndex);
-    EngineCanvas.TexQuad(FloatRect4(4.0, 480.0 - 32.0, 128.0, 32.0), IntColorWhite4);
+    EngineCanvas.TexQuad(Quad(4.0, 480.0 - 32.0, 128.0, 32.0), ColorRectWhite);
   end;
 
   if not GameOver then
@@ -412,7 +412,7 @@ begin
     Text := 'Score: ' + IntToStr(TShip(OEngine1[ShipID]).Score);
     TextSize := EngineFonts[FontArialBlack].TextWidthInt(Text);
 
-    EngineFonts[FontArialBlack].DrawText(Point2(632.0 - TextSize, 460.0), Text, IntColor2($FFDFFF67, $FF5C966F));
+    EngineFonts[FontArialBlack].DrawText(Point2f(632.0 - TextSize, 460.0), Text, ColorPair($FFDFFF67, $FF5C966F));
   end;
 
   if GameOver and (not StartingUp) then
@@ -420,10 +420,10 @@ begin
     for I := 0 to 3 do
     begin
       EngineCanvas.UseImageRegion(EngineImages[ImageLogo], I);
-      EngineCanvas.TexQuad(FloatRect4((I * 160.0), 0.0, 160.0, 240.0), IntColorWhite4);
+      EngineCanvas.TexQuad(Quad((I * 160.0), 0.0, 160.0, 240.0), ColorRectWhite);
     end;
 
-    EngineCanvas.Line(Point2(0.0, 224.0), Point2(640.0, 224.0), IntColor2($1F1F1F, $5F5F5F));
+    EngineCanvas.Line(Point2f(0.0, 224.0), Point2f(640.0, 224.0), ColorPair($1F1F1F, $5F5F5F));
 
     ShowHighScores;
   end;
@@ -488,8 +488,8 @@ begin
 
   with OEngine1[ShipID] as TShip do
   begin
-    Position := Point2(480.0, 240.0);
-    Velocity := ZeroPoint2;
+    Position := Point2f(480.0, 240.0);
+    Velocity := ZeroPoint2f;
     PrevWeapon := WeaponIndex;
 
     if Level < 11 then
@@ -503,7 +503,7 @@ begin
   for I := 1 to Max(Level div 2, 1) do
   begin
     Asteroid := TAsteroid.Create(OEngine1);
-    Asteroid.Position := Point2(160, 240);
+    Asteroid.Position := Point2f(160, 240);
     Asteroid.Size := 192 + (64 * Level);
     Asteroid.Score := 2 + ((Level * 2) div 3);
   end;
@@ -582,10 +582,10 @@ end;
 
 procedure TMainForm.ShowInitial;
 const
-  LogoSize: TPoint2px = (X: 192; Y: 272);
+  LogoSize: TPoint2i = (X: 192; Y: 272);
 var
   Alpha, Beta, I: Integer;
-  DrawAt: TPoint2px;
+  DrawAt: TPoint2i;
 begin
   // This method shows initial two logos
   if (LevelDelay <= InitialPhase1 + InitialPhase2) and (LevelDelay > InitialPhase2) then
@@ -603,7 +603,7 @@ begin
     DrawAt.Y := (DisplaySize.Y - LogoSize.Y) div 2;
 
     EngineCanvas.UseImageRegion(EngineImages[ImageBandLogo], 0);
-    EngineCanvas.TexQuad(FloatRect4(DrawAt.X, DrawAt.Y, LogoSize.X, LogoSize.Y), IntColorAlpha(Alpha));
+    EngineCanvas.TexQuad(Quad(DrawAt.X, DrawAt.Y, LogoSize.X, LogoSize.Y), IntColorAlpha(Alpha));
 
     EngineCanvas.FrameRect(FloatRect(DrawAt.X - 1, DrawAt.Y - 1, LogoSize.X + 2, LogoSize.Y + 2),
       IntColor($30707070, Alpha));
@@ -623,14 +623,14 @@ begin
     for I := 0 to 3 do
     begin
       EngineCanvas.UseImageRegion(EngineImages[ImageLogo], I);
-      EngineCanvas.TexQuad(FloatRect4((I * 160), 240 - 112, 160.0, 224.0), IntColorAlpha(Alpha));
+      EngineCanvas.TexQuad(Quad((I * 160), 240 - 112, 160.0, 224.0), IntColorAlpha(Alpha));
     end;
 
-    EngineCanvas.Line(Point2(0, 240 - 112 - 1), Point2(640, 240 - 112 - 1),
-      IntColor2(IntColor($40707070, Alpha)));
+    EngineCanvas.Line(Point2f(0, 240 - 112 - 1), Point2f(640, 240 - 112 - 1),
+      ColorPair(IntColor($40707070, Alpha)));
 
-    EngineCanvas.Line(Point2(0, 240 + 112), Point2(640, 240 + 112),
-      IntColor2(IntColor($40707070, Alpha)));
+    EngineCanvas.Line(Point2f(0, 240 + 112), Point2f(640, 240 + 112),
+      ColorPair(IntColor($40707070, Alpha)));
   end;
 end;
 
@@ -671,7 +671,7 @@ begin
     LTextWidth := Max(LTextWidth, EngineFonts[FontArialBlack].TextWidthInt(LText));
   end;
 
-  EngineFonts[FontImpact].DrawTextCentered(Point2(DisplaySize.X div 2, 228.0), 'High Scores:', IntColorWhite2);
+  EngineFonts[FontImpact].DrawTextCentered(Point2f(DisplaySize.X div 2, 228.0), 'High Scores:', ColorPairWhite);
 
   for I := 0 to HighScores.Count - 1 do
   begin
@@ -686,10 +686,10 @@ begin
     while Length(LText) > 24 do
       Delete(LText, Length(LText), 1);
 
-    EngineFonts[FontArialBlack].DrawText(Point2(200.0, 260 + (I * 20.0)), LText, IntColor2($FFFF7F3F), J / 255.0);
+    EngineFonts[FontArialBlack].DrawText(Point2f(200.0, 260 + (I * 20.0)), LText, ColorPair($FFFF7F3F), J / 255.0);
 
-    EngineFonts[FontArialBlack].DrawText(Point2(200 + LTextWidth + 20, 260 + (I * 20)), IntToStr(HighScores[I].Score),
-      IntColor2($FFFFD000), J / 255.0);
+    EngineFonts[FontArialBlack].DrawText(Point2f(200 + LTextWidth + 20, 260 + (I * 20)), IntToStr(HighScores[I].Score),
+      ColorPair($FFFFD000), J / 255.0);
   end;
 end;
 

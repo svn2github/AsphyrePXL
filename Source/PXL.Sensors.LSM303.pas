@@ -1,16 +1,16 @@
 unit PXL.Sensors.LSM303;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -28,8 +28,8 @@ type
     FAccelerometerAddress: Integer;
     FMagnetometerAddress: Integer;
 
-    function GetAccelerometer: TVector3;
-    function GetMagnetometer: TVector3;
+    function GetAccelerometer: TVector3f;
+    function GetMagnetometer: TVector3f;
     function GetThermometer: Single;
   public
     constructor Create(const ADataPort: TCustomPortI2C;
@@ -37,10 +37,10 @@ type
       const AMagnetometerAddress: Integer = DefaultMagnetometerAddress);
 
     { Returns raw values of accelerometer registers. }
-    function GetAccelerometerRaw: TVector3px;
+    function GetAccelerometerRaw: TVector3i;
 
     { Returns raw values of magnetometer registers. }
-    function GetMagnetometerRaw: TVector3px;
+    function GetMagnetometerRaw: TVector3i;
 
     { Returns raw values of thermometer registers. If there is a communication error, -1 is returned. On occasions
       there is an issue with thermometer on this chip, where it would fail each time when reading. This seems to be
@@ -60,17 +60,17 @@ type
 
     { Converts "compact" values obtained by either @link(GetAccelerometerCompact) or @link(GetMagnetometerCompact) into
       the actual 3D vector. }
-    class function CompactToVector(const Latitude, Longitude: Byte; const Magnitude: Word): TVector3;
+    class function CompactToVector(const Latitude, Longitude: Byte; const Magnitude: Word): TVector3f;
 
     property DataPort: TCustomPortI2C read FDataPort;
     property AccelerometerAddress: Integer read FAccelerometerAddress;
     property MagnetometerAddress: Integer read FMagnetometerAddress;
 
     { Current value of accelerometer in "g" units. }
-    property Accelerometer: TVector3 read GetAccelerometer;
+    property Accelerometer: TVector3f read GetAccelerometer;
 
     { Current value of magnetometer in "Gauss" units.}
-    property Magnetometer: TVector3 read GetMagnetometer;
+    property Magnetometer: TVector3f read GetMagnetometer;
 
     { Current value of thermometer in "Celsius" units. Note that this value is not calibrated and can only be used to
       calculate changes in temperature. Also, on occasions (this is determined at startup) it may not work at all, in
@@ -116,7 +116,7 @@ begin
     raise ESensorDataWrite.Create(Format(SSensorDataWrite, [2]));
 end;
 
-function TSensorLSM303.GetAccelerometerRaw: TVector3px;
+function TSensorLSM303.GetAccelerometerRaw: TVector3i;
 var
   Values: array[0..5] of Byte;
 begin
@@ -133,7 +133,7 @@ begin
   Result.Z := SmallInt(Word(Values[4]) or (Word(Values[5]) shl 8)) div 16;
 end;
 
-function TSensorLSM303.GetMagnetometerRaw: TVector3px;
+function TSensorLSM303.GetMagnetometerRaw: TVector3i;
 var
   Values: array[0..5] of Byte;
 begin
@@ -162,18 +162,18 @@ begin
   Result := (TempValue shr 8) or ((TempValue and $FF) shl 8);
 end;
 
-function TSensorLSM303.GetAccelerometer: TVector3;
+function TSensorLSM303.GetAccelerometer: TVector3f;
 begin
-  Result := TVector3(GetAccelerometerRaw) * 0.001;
+  Result := TVector3f(GetAccelerometerRaw) * 0.001;
 end;
 
-function TSensorLSM303.GetMagnetometer: TVector3;
+function TSensorLSM303.GetMagnetometer: TVector3f;
 const
   NormalizeCoefXY = 1.0 / 950.0;
   NormalizeCoefZ = 1.0 / 1055.0;
-  NormalizeCoefs: TVector3 = (X: NormalizeCoefXY; Y: NormalizeCoefXY; Z: NormalizeCoefZ);
+  NormalizeCoefs: TVector3f = (X: NormalizeCoefXY; Y: NormalizeCoefXY; Z: NormalizeCoefZ);
 begin
-  Result := TVector3(GetMagnetometerRaw) * NormalizeCoefs;
+  Result := TVector3f(GetMagnetometerRaw) * NormalizeCoefs;
 end;
 
 function TSensorLSM303.GetThermometer: Single;
@@ -191,8 +191,8 @@ function TSensorLSM303.GetAccelerometerCompact(out Latitude, Longitude: Byte; ou
 const
   MagToWord = 8192.0 * 0.001;
 var
-  ValueRaw: TVector3px;
-  ValueNorm: TVector3;
+  ValueRaw: TVector3i;
+  ValueNorm: TVector3f;
 begin
   try
     ValueRaw := GetAccelerometerRaw;
@@ -211,7 +211,7 @@ end;
 
 function TSensorLSM303.GetMagnetometerCompact(out Latitude, Longitude: Byte; out Magnitude: Word): Boolean;
 var
-  ValueRaw, ValueNorm: TVector3;
+  ValueRaw, ValueNorm: TVector3f;
 begin
   try
     ValueRaw := GetMagnetometer;
@@ -228,7 +228,7 @@ begin
   Result := True;
 end;
 
-class function TSensorLSM303.CompactToVector(const Latitude, Longitude: Byte; const Magnitude: Word): TVector3;
+class function TSensorLSM303.CompactToVector(const Latitude, Longitude: Byte; const Magnitude: Word): TVector3f;
 var
   LatF, LongF, MagF: Single;
 begin

@@ -1,16 +1,16 @@
 program BasicOpenGL;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {
   This example illustrates how to use OpenGL ES accelerated rendering on Raspberry PI using the same PXL code as on
   desktop. On Raspberry PI, this can be executed directly from console as it doesn't require X server to be running.
@@ -46,7 +46,7 @@ type
 
     FEngineTimer: TMultimediaTimer;
 
-    FDisplaySize: TPoint2px;
+    FDisplaySize: TPoint2i;
     FEngineTicks: Integer;
 
     FImageLenna: Integer;
@@ -133,36 +133,36 @@ begin
   for J := 0 to FDisplaySize.Y div 40 do
     for I := 0 to FDisplaySize.X div 40 do
       FEngineCanvas.FillQuad(
-        FloatRect4(I * 40, J * 40, 40, 40),
-        IntColor4($FF585858, $FF505050, $FF484848, $FF404040));
+        Quad(I * 40, J * 40, 40, 40),
+        ColorRect($FF585858, $FF505050, $FF484848, $FF404040));
 
   for I := 0 to FDisplaySize.X div 40 do
     FEngineCanvas.Line(
-      Point2(I * 40.0, 0.0),
-      Point2(I * 40.0, FDisplaySize.Y),
+      Point2f(I * 40.0, 0.0),
+      Point2f(I * 40.0, FDisplaySize.Y),
       $FF555555);
 
   for J := 0 to FDisplaySize.Y div 40 do
     FEngineCanvas.Line(
-      Point2(0.0, J * 40.0),
-      Point2(FDisplaySize.X, J * 40.0),
+      Point2f(0.0, J * 40.0),
+      Point2f(FDisplaySize.X, J * 40.0),
       $FF555555);
 
   // Draw an animated hole.
   FEngineCanvas.QuadHole(
-    Point2(0.0, 0.0),
+    Point2f(0.0, 0.0),
     FDisplaySize,
-    Point2(
+    Point2f(
       FDisplaySize.X * 0.5 + Cos(FEngineTicks * 0.0073) * FDisplaySize.X * 0.25,
       FDisplaySize.Y * 0.5 + Sin(FEngineTicks * 0.00312) * FDisplaySize.Y * 0.25),
-    Point2(80.0, 100.0),
+    Point2f(80.0, 100.0),
     $20FFFFFF, $80955BFF, 16);
 
   // Draw the image of famous Lenna.
   FEngineCanvas.UseImage(FEngineImages[FImageLenna]);
-  FEngineCanvas.TexQuad(FloatRect4RC(
-    TPoint2(FDisplaySize) * 0.5,
-    Point2(300.0, 300.0),
+  FEngineCanvas.TexQuad(TQuad.Rotated(
+    TPoint2f(FDisplaySize) * 0.5,
+    Point2f(300.0, 300.0),
     FEngineTicks * 0.01),
     IntColorAlpha(128));
 
@@ -171,36 +171,36 @@ begin
   Kappa := 1.25 * Pi + Sin(FEngineTicks * 0.01854) * 0.5 * Pi;
 
   FEngineCanvas.FillArc(
-    Point2(FDisplaySize.X * 0.1, FDisplaySize.Y * 0.9),
-    Point2(75.0, 50.0),
+    Point2f(FDisplaySize.X * 0.1, FDisplaySize.Y * 0.9),
+    Point2f(75.0, 50.0),
     Omega, Omega + Kappa, 32,
-    IntColor4($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
+    ColorRect($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
 
   // Draw an animated Ribbon.
   Omega := FEngineTicks * 0.02231;
   Kappa := 1.25 * Pi + Sin(FEngineTicks * 0.024751) * 0.5 * Pi;
 
   FEngineCanvas.FillRibbon(
-    Point2(FDisplaySize.X * 0.9, FDisplaySize.Y * 0.85),
-    Point2(25.0, 20.0),
-    Point2(70.0, 80.0),
+    Point2f(FDisplaySize.X * 0.9, FDisplaySize.Y * 0.85),
+    Point2f(25.0, 20.0),
+    Point2f(70.0, 80.0),
     Omega, Omega + Kappa, 32,
-    IntColor4($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
+    ColorRect($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
 
   FEngineFonts[FFontTahoma].DrawText(
-    Point2(4.0, 4.0),
+    Point2f(4.0, 4.0),
     'FPS: ' + IntToStr(FEngineTimer.FrameRate),
-    IntColor2($FFFFE887, $FFFF0000));
+    ColorPair($FFFFE887, $FFFF0000));
 
   FEngineFonts[FFontTahoma].DrawText(
-    Point2(4.0, 24.0),
+    Point2f(4.0, 24.0),
     'Technology: ' + GetFullDeviceTechString(FEngineDevice),
-    IntColor2($FFE8FFAA, $FF12C312));
+    ColorPair($FFE8FFAA, $FF12C312));
 
   FEngineFonts[FFontTahoma].DrawTextAligned(
-    Point2(FDisplaySize.X * 0.5, FDisplaySize.Y * 0.8),
+    Point2f(FDisplaySize.X * 0.5, FDisplaySize.Y * 0.8),
     'This application is rendering continuously, press ESC key to exit.',
-    IntColor2($FFF59CBA, $FFFF0000), TTextAlignment.Middle, TTextAlignment.Middle);
+    ColorPair($FFF59CBA, $FFFF0000), TTextAlignment.Middle, TTextAlignment.Middle);
 end;
 
 procedure TApplication.RenderWindow;

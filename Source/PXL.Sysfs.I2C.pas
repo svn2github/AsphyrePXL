@@ -1,16 +1,16 @@
 unit PXL.Sysfs.I2C;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -23,15 +23,15 @@ type
   private
     FSystemPath: StdString;
     FHandle: TUntypedHandle;
-    FCurrentAddress: Integer;
+    FCurrentAddress: Cardinal;
   public
     constructor Create(const ASystemPath: StdString);
     destructor Destroy; override;
 
-    procedure SetAddress(const Address: Integer); override;
+    procedure SetAddress(const Address: Cardinal); override;
 
-    function Read(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function Write(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
+    function Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
 
     function ReadByte(out Value: Byte): Boolean; override;
     function WriteByte(const Value: Byte): Boolean; override;
@@ -44,12 +44,12 @@ type
     function ReadWordData(const Command: Byte; out Value: Word): Boolean; override;
     function WriteWordData(const Command: Byte; const Value: Word): Boolean; override;
 
-    function ReadBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function WriteBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer; override;
+    function ReadBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function WriteBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
 
     function ProcessCall(const Command: Byte; var Value: Word): Boolean;
     function ProcessBlockCall(const Command: Byte; const Buffer: Pointer;
-      const BufferSize: Integer): Integer;
+      const BufferSize: Cardinal): Cardinal;
 
     property SystemPath: StdString read FSystemPath;
     property Handle: TUntypedHandle read FHandle;
@@ -81,7 +81,7 @@ begin
   inherited Create;
 
   FSystemPath := ASystemPath;
-  FCurrentAddress := -1;
+  FCurrentAddress := High(Cardinal);
 
   FHandle := fpopen(FSystemPath, O_RDWR);
   if FHandle < 0 then
@@ -102,22 +102,19 @@ begin
   inherited;
 end;
 
-procedure TSysfsI2C.SetAddress(const Address: Integer);
+procedure TSysfsI2C.SetAddress(const Address: Cardinal);
 begin
   if FCurrentAddress <> Address then
   begin
     FCurrentAddress := Address;
 
-    if FCurrentAddress < 0 then
-      FCurrentAddress := -1;
-
-    if FCurrentAddress <> - 1 then
+    if FCurrentAddress <> High(Cardinal) then
       if fpioctl(FHandle, I2C_SLAVE, Pointer(FCurrentAddress)) < 0 then
         raise ESysfsI2CAddress.Create(Format(SCannotSetI2CSlaveAddress, [FCurrentAddress]));
   end;
 end;
 
-function TSysfsI2C.Read(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSysfsI2C.Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   BytesRead: Integer;
 begin
@@ -128,10 +125,10 @@ begin
   if BytesRead < 0 then
     raise ESysfsI2CBusRead.Create(Format(SErrorReadI2CRawBytes, [BufferSize]));
 
-  Result := BytesRead;
+  Result := Cardinal(BytesRead);
 end;
 
-function TSysfsI2C.Write(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSysfsI2C.Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   BytesWritten: Integer;
 begin
@@ -142,7 +139,7 @@ begin
   if BytesWritten < 0 then
     raise ESysfsI2CBusWrite.Create(Format(SErrorWriteI2CRawBytes, [BufferSize]));
 
-  Result := BytesWritten;
+  Result := Cardinal(BytesWritten);
 end;
 
 function TSysfsI2C.ReadByte(out Value: Byte): Boolean;
@@ -228,7 +225,7 @@ begin
   Result := Res >= SizeOf(Word);
 end;
 
-function TSysfsI2C.ReadBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSysfsI2C.ReadBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   TempBuf: Pointer;
   Res: Integer;
@@ -244,8 +241,8 @@ begin
       if Res < 0 then
         raise ESysfsI2CBusRead.Create(SErrorReadI2CDataBlock);
 
-      if Res > BufferSize then
-        Res := BufferSize;
+      if Cardinal(Res) > BufferSize then
+        Cardinal(Res) := BufferSize;
 
       Move(TempBuf^, Buffer^, Res);
     finally
@@ -259,10 +256,10 @@ begin
       raise ESysfsI2CBusRead.Create(SErrorReadI2CDataBlock);
   end;
 
-  Result := Res;
+  Result := Cardinal(Res);
 end;
 
-function TSysfsI2C.WriteBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSysfsI2C.WriteBlockData(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   Res: Integer;
 begin
@@ -273,7 +270,7 @@ begin
   if Res < 0 then
     raise ESysfsI2CBusWrite.Create(Format(SErrorWriteI2CDataBytes, [BufferSize]));
 
-  Result := Res;
+  Result := Cardinal(Res);
 end;
 
 function TSysfsI2C.ProcessCall(const Command: Byte; var Value: Word): Boolean;
@@ -289,7 +286,7 @@ begin
     Value := Res;
 end;
 
-function TSysfsI2C.ProcessBlockCall(const Command: Byte; const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSysfsI2C.ProcessBlockCall(const Command: Byte; const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
   TempBuf: Pointer;
   Res: Integer;
@@ -307,8 +304,8 @@ begin
       if Res < 0 then
         raise ESysfsI2CBusProcess.Create(Format(SErrorProcessI2CDataBytes, [BufferSize]));
 
-      if Res > BufferSize then
-        Res := BufferSize;
+      if Cardinal(Res) > BufferSize then
+        Cardinal(Res) := BufferSize;
 
       Move(TempBuf^, Buffer^, Res);
     finally
@@ -322,7 +319,7 @@ begin
       raise ESysfsI2CBusProcess.Create(Format(SErrorProcessI2CDataBytes, [BufferSize]));
   end;
 
-  Result := Res;
+  Result := Cardinal(Res);
 end;
 
 end.

@@ -1,16 +1,16 @@
 unit PXL.Textures.DX11;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -33,8 +33,8 @@ type
     function CreateDefaultTexture: Boolean;
     function UploadTexture: Boolean;
     function CreateShaderResourceView: Boolean;
-    function CreateStagingTexture(const Size: TPoint2px; out Texture: ID3D11Texture2D): Boolean;
-    function DownloadStagingTexture(const DestPos, Size: TPoint2px; const Texture: ID3D11Texture2D): Boolean;
+    function CreateStagingTexture(const Size: TPoint2i; out Texture: ID3D11Texture2D): Boolean;
+    function DownloadStagingTexture(const DestPos, Size: TPoint2i; const Texture: ID3D11Texture2D): Boolean;
   protected
     function DoInitialize: Boolean; override;
     procedure DoFinalize; override;
@@ -43,7 +43,7 @@ type
     function DoUnlock: Boolean; override;
 
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
   public
     constructor Create(const ADevice: TCustomDevice; const AutoSubscribe: Boolean); override;
     destructor Destroy; override;
@@ -96,7 +96,7 @@ type
     procedure DoFinalize; override;
 
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
   public
     function Bind(const Channel: Integer): Boolean; override;
 
@@ -374,7 +374,7 @@ begin
   Result := True;
 end;
 
-function TDX11LockableTexture.CreateStagingTexture(const Size: TPoint2px; out Texture: ID3D11Texture2D): Boolean;
+function TDX11LockableTexture.CreateStagingTexture(const Size: TPoint2i; out Texture: ID3D11Texture2D): Boolean;
 var
   Desc: D3D11_TEXTURE2D_DESC;
 begin
@@ -405,7 +405,7 @@ begin
   end;
 end;
 
-function TDX11LockableTexture.DownloadStagingTexture(const DestPos, Size: TPoint2px;
+function TDX11LockableTexture.DownloadStagingTexture(const DestPos, Size: TPoint2i;
   const Texture: ID3D11Texture2D): Boolean;
 var
   Mapped: D3D11_MAPPED_SUBRESOURCE;
@@ -441,7 +441,7 @@ begin
 end;
 
 function TDX11LockableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   StagingTexture: ID3D11Texture2D;
   StagingBox: D3D11_BOX;
@@ -451,7 +451,7 @@ begin
     if not CreateStagingTexture(SourceRect.Size, StagingTexture) then
       Exit(False);
 
-    if (Size <> Source.Size) or (DestPos <> ZeroPoint2px) or (SourceRect.TopLeft <> ZeroPoint2px) or
+    if (Size <> Source.Size) or (DestPos <> ZeroPoint2i) or (SourceRect.TopLeft <> ZeroPoint2i) or
       (SourceRect.Size <> Source.Size) then
     begin
       StagingBox.Left := SourceRect.Left;
@@ -881,7 +881,7 @@ begin
 end;
 
 function TDX11DrawableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   SourceRes: ID3D11Resource;
   SourceBox: D3D11_BOX;
@@ -898,7 +898,7 @@ begin
 
     if SourceRes <> nil then
     begin
-      if (Size <> Source.Size) or (DestPos <> ZeroPoint2px) or (SourceRect.TopLeft <> ZeroPoint2px) or
+      if (Size <> Source.Size) or (DestPos <> ZeroPoint2i) or (SourceRect.TopLeft <> ZeroPoint2i) or
         (SourceRect.Size <> Source.Size) then
       begin
         SourceBox.Left := SourceRect.Left;

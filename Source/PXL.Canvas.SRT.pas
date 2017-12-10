@@ -1,16 +1,16 @@
 unit PXL.Canvas.SRT;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -32,14 +32,14 @@ type
     function GetClipRect: TIntRect; override;
     procedure SetClipRect(const Value: TIntRect); override;
   public
-    procedure PutPixel(const Point: TPoint2; const Color: TIntColor); override;
-    procedure Line(const SrcPoint, DestPoint: TPoint2; const Color: TIntColor2); override;
+    procedure PutPixel(const Point: TPoint2f; const Color: TIntColor); override;
+    procedure Line(const SrcPoint, DestPoint: TPoint2f; const Color: TColorPair); override;
 
-    procedure DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+    procedure DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
       const VertexCount, TriangleCount: Integer;
       const BlendingEffect: TBlendingEffect = TBlendingEffect.Normal); override;
 
-    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
       const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
       const BlendingEffect: TBlendingEffect = TBlendingEffect.Normal); override;
 
@@ -69,7 +69,7 @@ begin
   if FSurface = nil then
     Exit(False);
 
-  FClipRect := IntRect(ZeroPoint2px, Context.SurfaceSize);
+  FClipRect := IntRect(ZeroPoint2i, Context.SurfaceSize);
 
   Result := True;
 end;
@@ -93,32 +93,31 @@ procedure TSRTCanvas.Flush;
 begin
 end;
 
-procedure TSRTCanvas.PutPixel(const Point: TPoint2; const Color: TIntColor);
+procedure TSRTCanvas.PutPixel(const Point: TPoint2f; const Color: TIntColor);
 var
-  IntPoint: TPoint2px;
+  IntPoint: TPoint2i;
 begin
   if FSurface <> nil then
   begin
-    IntPoint := Point2ToPx(Point);
-
-    if PointInRect(IntPoint, FClipRect) then
+    IntPoint := Point.ToInt;
+    if FClipRect.Contains(IntPoint) then
       FSurface.DrawPixelUnsafe(IntPoint, Color);
   end;
 end;
 
-procedure TSRTCanvas.Line(const SrcPoint, DestPoint: TPoint2; const Color: TIntColor2);
+procedure TSRTCanvas.Line(const SrcPoint, DestPoint: TPoint2f; const Color: TColorPair);
 var
-  SrcPt, DestPt, Delta, DrawPos: TPoint2px;
+  SrcPt, DestPt, Delta, DrawPos: TPoint2i;
   FixedPos, FixedDelta, InitialPos, I, AlphaPos, AlphaDelta: Integer;
 begin
-  SrcPt := Point2ToPx(SrcPoint);
-  DestPt := Point2ToPx(DestPoint);
+  SrcPt := SrcPoint.ToInt;
+  DestPt := DestPoint.ToInt;
   Delta.X := Abs(DestPt.X - SrcPt.X);
   Delta.Y := Abs(DestPt.Y - SrcPt.Y);
 
   if (Delta.X < 1) and (Delta.Y < 1) then
   begin
-    if PointInRect(Point2ToPx((SrcPoint + DestPoint) * 0.5), FClipRect) then
+    if FClipRect.Contains(((SrcPoint + DestPoint) * 0.5).ToInt) then
       FSurface.DrawPixelUnsafe(SrcPt, AveragePixels(Color.First, Color.Second));
 
     Exit;
@@ -148,9 +147,9 @@ begin
 
     for I := 0 to Delta.Y - 1 do
     begin
-      DrawPos := Point2px(FixedPos div 65536, InitialPos + I);
+      DrawPos := Point2i(FixedPos div 65536, InitialPos + I);
 
-      if PointInRect(DrawPos, FClipRect) then
+      if FClipRect.Contains(DrawPos) then
         FSurface.DrawPixelUnsafe(DrawPos, BlendPixels(Color.First, Color.Second, AlphaPos div 256));
 
       Inc(FixedPos, FixedDelta);
@@ -181,9 +180,9 @@ begin
 
     for I := 0 to Delta.X - 1 do
     begin
-      DrawPos := Point2px(InitialPos + I, FixedPos div 65536);
+      DrawPos := Point2i(InitialPos + I, FixedPos div 65536);
 
-      if PointInRect(DrawPos, FClipRect) then
+      if FClipRect.Contains(DrawPos) then
         FSurface.DrawPixelUnsafe(DrawPos, BlendPixels(Color.First, Color.Second, AlphaPos div 256));
 
       Inc(FixedPos, FixedDelta);
@@ -192,12 +191,12 @@ begin
   end;
 end;
 
-procedure TSRTCanvas.DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+procedure TSRTCanvas.DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
   const VertexCount, TriangleCount: Integer; const BlendingEffect: TBlendingEffect);
 var
   I: Integer;
   Index1, Index2, Index3: PLongInt;
-  Vertex1, Vertex2, Vertex3: PPoint2;
+  Vertex1, Vertex2, Vertex3: PPoint2f;
   Color1, Color2, Color3: PIntColor;
   Det: Single;
 begin
@@ -210,9 +209,9 @@ begin
 
   for I := 0 to TriangleCount - 1 do
   begin
-    Vertex1 := Pointer(PtrInt(Vertices) + Index1^ * SizeOf(TPoint2));
-    Vertex2 := Pointer(PtrInt(Vertices) + Index2^ * SizeOf(TPoint2));
-    Vertex3 := Pointer(PtrInt(Vertices) + Index3^ * SizeOf(TPoint2));
+    Vertex1 := Pointer(PtrInt(Vertices) + Index1^ * SizeOf(TPoint2f));
+    Vertex2 := Pointer(PtrInt(Vertices) + Index2^ * SizeOf(TPoint2f));
+    Vertex3 := Pointer(PtrInt(Vertices) + Index3^ * SizeOf(TPoint2f));
 
     Color1 := Pointer(PtrInt(Colors) + Index1^ * SizeOf(TIntColor));
     Color2 := Pointer(PtrInt(Colors) + Index2^ * SizeOf(TIntColor));
@@ -220,10 +219,10 @@ begin
 
     Det := (Vertex1.X - Vertex3.X) * (Vertex2.Y - Vertex3.Y) - (Vertex2.X - Vertex3.X) * (Vertex1.Y - Vertex3.Y);
     if Det > 0 then
-      DrawTriangle(FSurface, nil, Vertex3^, Vertex2^, Vertex1^, ZeroPoint2, ZeroPoint2, ZeroPoint2, Color3^, Color2^,
+      DrawTriangle(FSurface, nil, Vertex3^, Vertex2^, Vertex1^, ZeroPoint2f, ZeroPoint2f, ZeroPoint2f, Color3^, Color2^,
         Color1^, FClipRect, BlendingEffect = TBlendingEffect.Add)
     else
-      DrawTriangle(FSurface, nil, Vertex1^, Vertex2^, Vertex3^, ZeroPoint2, ZeroPoint2, ZeroPoint2, Color1^, Color2^,
+      DrawTriangle(FSurface, nil, Vertex1^, Vertex2^, Vertex3^, ZeroPoint2f, ZeroPoint2f, ZeroPoint2f, Color1^, Color2^,
         Color3^, FClipRect, BlendingEffect = TBlendingEffect.Add);
 
     Index1 := Pointer(PtrInt(Index1) + 3 * SizeOf(LongInt));
@@ -232,13 +231,13 @@ begin
   end;
 end;
 
-procedure TSRTCanvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+procedure TSRTCanvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
   const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
   const BlendingEffect: TBlendingEffect);
 var
   I: Integer;
   Index1, Index2, Index3: PLongInt;
-  Vertex1, Vertex2, Vertex3, TexCoord1, TexCoord2, TexCoord3: PPoint2;
+  Vertex1, Vertex2, Vertex3, TexCoord1, TexCoord2, TexCoord3: PPoint2f;
   Color1, Color2, Color3: PIntColor;
 begin
   if (TriangleCount < 1) or (VertexCount < 3) or (not (Texture is TSRTLockableTexture)) or (FSurface = nil) then
@@ -250,13 +249,13 @@ begin
 
   for I := 0 to TriangleCount - 1 do
   begin
-    Vertex1 := Pointer(PtrInt(Vertices) + Index1^ * SizeOf(TPoint2));
-    Vertex2 := Pointer(PtrInt(Vertices) + Index2^ * SizeOf(TPoint2));
-    Vertex3 := Pointer(PtrInt(Vertices) + Index3^ * SizeOf(TPoint2));
+    Vertex1 := Pointer(PtrInt(Vertices) + Index1^ * SizeOf(TPoint2f));
+    Vertex2 := Pointer(PtrInt(Vertices) + Index2^ * SizeOf(TPoint2f));
+    Vertex3 := Pointer(PtrInt(Vertices) + Index3^ * SizeOf(TPoint2f));
 
-    TexCoord1 := Pointer(PtrInt(TexCoords) + Index1^ * SizeOf(TPoint2));
-    TexCoord2 := Pointer(PtrInt(TexCoords) + Index2^ * SizeOf(TPoint2));
-    TexCoord3 := Pointer(PtrInt(TexCoords) + Index3^ * SizeOf(TPoint2));
+    TexCoord1 := Pointer(PtrInt(TexCoords) + Index1^ * SizeOf(TPoint2f));
+    TexCoord2 := Pointer(PtrInt(TexCoords) + Index2^ * SizeOf(TPoint2f));
+    TexCoord3 := Pointer(PtrInt(TexCoords) + Index3^ * SizeOf(TPoint2f));
 
     Color1 := Pointer(PtrInt(Colors) + Index1^ * SizeOf(TIntColor));
     Color2 := Pointer(PtrInt(Colors) + Index2^ * SizeOf(TIntColor));

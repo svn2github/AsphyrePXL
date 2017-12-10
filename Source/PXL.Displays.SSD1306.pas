@@ -1,16 +1,16 @@
 unit PXL.Displays.SSD1306;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -21,12 +21,12 @@ uses
 type
   TDisplay = class(TCustomDrivenDualDisplay)
   public const
-    OLED128x64: TPoint2px = (X: 128; Y: 64);
-    OLED128x32: TPoint2px = (X: 128; Y: 32);
-    OLED96x16: TPoint2px = (X: 96; Y: 16);
-    OLED64x48: TPoint2px = (X: 64; Y: 48);
+    OLED128x64: TPoint2i = (X: 128; Y: 64);
+    OLED128x32: TPoint2i = (X: 128; Y: 32);
+    OLED96x16: TPoint2i = (X: 96; Y: 16);
+    OLED64x48: TPoint2i = (X: 64; Y: 48);
   private
-    FScreenSize: TPoint2px;
+    FScreenSize: TPoint2i;
     FInternalVCC: Boolean;
 
     procedure SetWriteWindow(const WriteRect: TIntRect);
@@ -39,11 +39,11 @@ type
 
     function GetScanline(const Index: Integer): Pointer; override;
   public
-    constructor Create(const AScreenSize: TPoint2px; const AGPIO: TCustomGPIO; const ADataPort: TCustomDataPort;
+    constructor Create(const AScreenSize: TPoint2i; const AGPIO: TCustomGPIO; const ADataPort: TCustomDataPort;
       const APinDC: Integer; const APinRST: Integer = PinNumberUnused; const AAddress: Integer = PinNumberUnused;
       const AInternalVCC: Boolean = True);
 
-    property ScreenSize: TPoint2px read FScreenSize;
+    property ScreenSize: TPoint2i read FScreenSize;
   end;
 
 implementation
@@ -75,7 +75,7 @@ const
     4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22, 3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25,
     15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21);
 
-constructor TDisplay.Create(const AScreenSize: TPoint2px; const AGPIO: TCustomGPIO; const ADataPort: TCustomDataPort;
+constructor TDisplay.Create(const AScreenSize: TPoint2i; const AGPIO: TCustomGPIO; const ADataPort: TCustomDataPort;
   const APinDC, APinRST, AAddress: Integer; const AInternalVCC: Boolean);
 begin
   FScreenSize := AScreenSize;

@@ -1,16 +1,16 @@
 unit Engine.Particles;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -29,9 +29,9 @@ type
     FPrev: TParticle;
     FNext: TParticle;
     FOrderIndex: Integer;
-    FAccel: TPoint2;
-    FPosition: TPoint2;
-    FVelocity: TPoint2;
+    FAccel: TPoint2f;
+    FPosition: TPoint2f;
+    FVelocity: TPoint2f;
     FMaxRange: VectorInt;
     FCurRange: VectorInt;
 
@@ -39,11 +39,11 @@ type
     procedure SetPrev(const Value: TParticle);
     procedure SetNext(const Value: TParticle);
     procedure SetOrderIndex(const Value: Integer);
-    procedure SetPosition(const Value: TPoint2);
-    procedure SetVelocity(const Value: TPoint2);
-    procedure SetAccel(const Value: TPoint2);
-    function GetIntPos: TPoint2px; inline;
-    procedure SetIntPos(const Value: TPoint2px); inline;
+    procedure SetPosition(const Value: TPoint2f);
+    procedure SetVelocity(const Value: TPoint2f);
+    procedure SetAccel(const Value: TPoint2f);
+    function GetIntPos: TPoint2i; inline;
+    procedure SetIntPos(const Value: TPoint2i); inline;
     procedure SetCurRange(const Value: VectorInt);
     procedure SetMaxRange(const Value: VectorInt);
   protected
@@ -73,13 +73,13 @@ type
     property OrderIndex: Integer read FOrderIndex write SetOrderIndex;
 
     // particle position vector
-    property Position: TPoint2 read FPosition write SetPosition;
-    property Velocity: TPoint2 read FVelocity write SetVelocity;
+    property Position: TPoint2f read FPosition write SetPosition;
+    property Velocity: TPoint2f read FVelocity write SetVelocity;
     // particle acceleration
-    property Accel: TPoint2 read FAccel write SetAccel;
+    property Accel: TPoint2f read FAccel write SetAccel;
 
     // integer position
-    property IntPos: TPoint2px read GetIntPos write SetIntPos;
+    property IntPos: TPoint2i read GetIntPos write SetIntPos;
 
     // current range the particle has travelled
     property CurRange: VectorInt read FCurRange write SetCurRange;
@@ -90,21 +90,21 @@ type
   TParticleEx = class(TParticle)
   private
     FEffect: TBlendingEffect;
-    FDiffuse4: TIntColor4;
+    FDiffuse4: TColorRect;
     FImageIndex: Integer;
-    FRenderSize: TPoint2px;
+    FRenderSize: TPoint2i;
 
     FAngle: VectorFloat;
     FAngleVel: VectorFloat;
-    FRotMiddle: TPoint2px;
+    FRotMiddle: TPoint2i;
 
     procedure SetImageIndex(const Value: Integer);
-    procedure SetRenderSize(const Value: TPoint2px);
+    procedure SetRenderSize(const Value: TPoint2i);
     procedure SetEffect(const Value: TBlendingEffect);
-    procedure SetDiffuse4(const Value: TIntColor4);
+    procedure SetDiffuse4(const Value: TColorRect);
     function GetDiffuse: TIntColor; inline;
     procedure SetDiffuse(const Value: TIntColor); inline;
-    procedure SetRotMiddle(const Value: TPoint2px);
+    procedure SetRotMiddle(const Value: TPoint2i);
     procedure SetAngle(const Value: VectorFloat);
     procedure SetAngleVel(const Value: VectorFloat);
   protected
@@ -116,8 +116,8 @@ type
     // the particle has been rotated
     procedure UpdatedRotation; virtual;
     // * called to render the particle
-    //   "Pt" represents the middle Point2px of the particle on screen
-    procedure ExRender(const Pt: TPoint2px); virtual;
+    //   "Pt" represents the middle Point2i of the particle on screen
+    procedure ExRender(const Pt: TPoint2i); virtual;
   public
     constructor Create(const AOwner: TParticles; const AOrderIndex: Integer); override;
 
@@ -127,14 +127,14 @@ type
     // visible index
     property ImageIndex: Integer read FImageIndex write SetImageIndex;
     // rendering size
-    property RenderSize: TPoint2px read FRenderSize write SetRenderSize;
+    property RenderSize: TPoint2i read FRenderSize write SetRenderSize;
     // rendering info
     property Effect: TBlendingEffect read FEffect write SetEffect;
-    property Diffuse4: TIntColor4 read FDiffuse4 write SetDiffuse4;
+    property Diffuse4: TColorRect read FDiffuse4 write SetDiffuse4;
     property Diffuse: TIntColor read GetDiffuse write SetDiffuse;
 
     // particle rotation info
-    property RotMiddle: TPoint2px read FRotMiddle write SetRotMiddle;
+    property RotMiddle: TPoint2i read FRotMiddle write SetRotMiddle;
     // angle and rotation speed (in radians)
     property Angle: VectorFloat read FAngle write SetAngle;
     property AngleVel: VectorFloat read FAngleVel write SetAngleVel;
@@ -172,7 +172,7 @@ type
     property Count: Integer read GetCount;
   end;
 
-function GetImageVisibleSize(const Image: TAtlasImage): TPoint2px;
+function GetImageVisibleSize(const Image: TAtlasImage): TPoint2i;
 
 implementation
 
@@ -181,14 +181,14 @@ uses
 
 {$REGION 'Global Functions'}
 
-function GetImageVisibleSize(const Image: TAtlasImage): TPoint2px;
+function GetImageVisibleSize(const Image: TAtlasImage): TPoint2i;
 begin
   if Image.Regions.Count > 0 then
     Result := Image.Regions[0].Rect.Size
   else if Image.TextureCount > 0 then
     Result := Image.Texture[0].Size
   else
-    Result := ZeroPoint2px;
+    Result := ZeroPoint2i;
 end;
 
 {$ENDREGION}
@@ -304,30 +304,30 @@ begin
     FOwner.Insert(Self);
 end;
 
-procedure TParticle.SetPosition(const Value: TPoint2);
+procedure TParticle.SetPosition(const Value: TPoint2f);
 begin
   FPosition := Value;
   UpdatedPosition;
 end;
 
-procedure TParticle.SetVelocity(const Value: TPoint2);
+procedure TParticle.SetVelocity(const Value: TPoint2f);
 begin
   FVelocity := Value;
   UpdatedVelocity;
 end;
 
-procedure TParticle.SetAccel(const Value: TPoint2);
+procedure TParticle.SetAccel(const Value: TPoint2f);
 begin
   FAccel := Value;
   UpdatedAccel;
 end;
 
-function TParticle.GetIntPos: TPoint2px;
+function TParticle.GetIntPos: TPoint2i;
 begin
-  Result := Point2ToPx(FPosition);
+  Result := FPosition.ToInt;
 end;
 
-procedure TParticle.SetIntPos(const Value: TPoint2px);
+procedure TParticle.SetIntPos(const Value: TPoint2i);
 begin
   Position := Value;
 end;
@@ -384,7 +384,7 @@ constructor TParticleEx.Create(const AOwner: TParticles; const AOrderIndex: Inte
 begin
   inherited;
 
-  FDiffuse4 := IntColorWhite4;
+  FDiffuse4 := ColorRectWhite;
   FEffect := TBlendingEffect.Normal;
   FImageIndex := -1;
   FAngle := Random * Pi * 2;
@@ -429,7 +429,7 @@ begin
     if Image <> nil then
     begin
       FRenderSize := GetImageVisibleSize(Image);
-      FRotMiddle := Point2ToPx(TPoint2(FRenderSize) * 0.5);
+      FRotMiddle := (TPoint2f(FRenderSize) * 0.5).ToInt;
     end;
   end;
 
@@ -437,19 +437,19 @@ begin
   UpdatedImage;
 end;
 
-procedure TParticleEx.SetRenderSize(const Value: TPoint2px);
+procedure TParticleEx.SetRenderSize(const Value: TPoint2i);
 begin
   FRenderSize := Value;
   UpdatedImage;
 end;
 
-procedure TParticleEx.SetRotMiddle(const Value: TPoint2px);
+procedure TParticleEx.SetRotMiddle(const Value: TPoint2i);
 begin
   FRotMiddle := Value;
   UpdatedImage;
 end;
 
-procedure TParticleEx.SetDiffuse4(const Value: TIntColor4);
+procedure TParticleEx.SetDiffuse4(const Value: TColorRect);
 begin
   FDiffuse4 := Value;
   UpdatedEffect;
@@ -483,18 +483,18 @@ end;
 
 procedure TParticleEx.Render(const Tag: TObject);
 var
-  Pt: TPoint2px;
+  Pt: TPoint2i;
 begin
   Pt := IntPos;
 
-  if not OverlapRect(IntRect(Pt.X - RotMiddle.X, Pt.Y - RotMiddle.Y, RenderSize.X, RenderSize.Y),
+  if not IntRect(Pt.X - RotMiddle.X, Pt.Y - RotMiddle.Y, RenderSize.X, RenderSize.Y).Overlaps(
     IntRect(0, 0, DisplaySize.X, DisplaySize.Y)) then
     Exit;
 
   ExRender(Pt);
 end;
 
-procedure TParticleEx.ExRender(const Pt: TPoint2px);
+procedure TParticleEx.ExRender(const Pt: TPoint2i);
 var
   Image: TAtlasImage;
   Pattern: Integer;
@@ -509,7 +509,7 @@ begin
     Pattern := (CurRange * Image.Regions.Count) div MaxRange;
 
   EngineCanvas.UseImageRegion(Image, Pattern);
-  EngineCanvas.TexQuad(FloatRect4R(Pt, RenderSize, RotMiddle, Angle), Diffuse4, Effect);
+  EngineCanvas.TexQuad(TQuad.Rotated(Pt, RenderSize, RotMiddle, Angle), Diffuse4, Effect);
 end;
 
 {$ENDREGION}
@@ -707,7 +707,7 @@ begin
 
   Result := TParticleEx.Create(Self, ImageNum);
 
-  Result.IntPos := Point2px(Xpos, Ypos);
+  Result.IntPos := Point2i(Xpos, Ypos);
   Result.RenderSize := GetImageVisibleSize(Image);
   Result.Effect := Effect;
   Result.ImageIndex := ImageNum;

@@ -1,26 +1,25 @@
 unit PXL.Rasterizer.SRT;
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-
- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  This triangle rasterization code is based on C/C++ affine texture mapping code, that was originally published long
-  time ago in "fatmap2.zip" package by Mats Byggmastar, 1997.
+  This triangle rasterization code is based on C/C++ affine texture mapping code, that was originally
+  published long time ago in "fatmap2.zip" package by Mats Byggmastar, 1997.
 
   Initial Pascal translation and adaptation was made by Yuriy Kotsarenko in November 2007.
 
-  The code has been rewritten to use vertex indices and avoid pointer math as much as possible, in addition to
-  interpolating colors in August, 2015 by Yuriy Kotsarenko. "Inner loop" code is made with preference on stability
-  rather the performance, guarding against possible access violations and overflows.
+  The code has been rewritten to use vertex indices and avoid pointer math as much as possible, in addition
+  to interpolating colors in August, 2015 by Yuriy Kotsarenko. "Inner loop" code is made with preference on
+  stability rather the performance, guarding against possible access violations and overflows.
 }
 interface
 
@@ -32,7 +31,7 @@ uses
 // Renders colored and/or textured triangle on destination surface.
 // Note that the vertices should be specified in anti-clockwise order.
 procedure DrawTriangle(const Surface: TConceptualPixelSurface; const Texture: TPixelSurface;
-  const Pos1, Pos2, Pos3: TPoint2; TexPos1, TexPos2, TexPos3: TPoint2; const Color1, Color2, Color3: TIntColor;
+  const Pos1, Pos2, Pos3: TPoint2f; TexPos1, TexPos2, TexPos3: TPoint2f; const Color1, Color2, Color3: TIntColor;
   const ClipRect: TIntRect; const BlendAdd: Boolean);
 
 implementation
@@ -106,7 +105,7 @@ begin
   Result := Round(Value * 65536.0);
 end;
 
-function FloatToFixed(const Point: TPoint2): TRasterPoint; inline; overload;
+function FloatToFixed(const Point: TPoint2f): TRasterPoint; inline; overload;
 begin
   Result.X := FloatToFixed(Point.X);
   Result.Y := FloatToFixed(Point.Y);
@@ -120,7 +119,7 @@ begin
   Result.A := TRasterInt(TIntColorRec(Color).Alpha) * 65536;
 end;
 
-function FloatToFixedHalfShift(const Point: TPoint2): TRasterPoint; inline;
+function FloatToFixedHalfShift(const Point: TPoint2f): TRasterPoint; inline;
 begin
   Result.X := FloatToFixed(Point.X - 0.5);
   Result.Y := FloatToFixed(Point.Y - 0.5);
@@ -540,7 +539,7 @@ begin
 end;
 
 procedure DrawTriangle(const Surface: TConceptualPixelSurface; const Texture: TPixelSurface;
-  const Pos1, Pos2, Pos3: TPoint2; TexPos1, TexPos2, TexPos3: TPoint2; const Color1, Color2, Color3: TIntColor;
+  const Pos1, Pos2, Pos3: TPoint2f; TexPos1, TexPos2, TexPos3: TPoint2f; const Color1, Color2, Color3: TIntColor;
   const ClipRect: TIntRect; const BlendAdd: Boolean);
 
   function CalculateDelta(const Value1, Value2, Value3, Pos1, Pos2, Pos3, InvDenom: Single): Integer;
@@ -557,9 +556,9 @@ var
 begin
   if Texture <> nil then
   begin
-    TexPos1 := TexPos1 * TPoint2(Texture.Size);
-    TexPos2 := TexPos2 * TPoint2(Texture.Size);
-    TexPos3 := TexPos3 * TPoint2(Texture.Size);
+    TexPos1 := TexPos1 * TPoint2f(Texture.Size);
+    TexPos2 := TexPos2 * TPoint2f(Texture.Size);
+    TexPos3 := TexPos3 * TPoint2f(Texture.Size);
   end;
 
   Denom := (Pos1.X - Pos3.X) * (Pos2.Y - Pos3.Y) - (Pos2.X - Pos3.X) * (Pos1.Y - Pos3.Y);

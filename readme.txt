@@ -1,4 +1,4 @@
-          Platform eXtended Library v1.0.1, dated 15-Feb-2016.
+          Platform eXtended Library v1.1.0, dated 9-Dec-2017.
              Copyright (c) 2000 - 2017  Yuriy Kotsarenko
                    https://asphyre.sourceforge.net
                    https://asphyre.net
@@ -43,8 +43,8 @@ and open "index.html". Alternatively, you can create a shortcut to this file
 on your desktop.
 
 Remember that this library and its source code are distributed under terms of
-Mozilla Public License (MPL) version 2.0. By using this product, you
-acknowledge your consent to be bound by the terms of MPL.
+Apache License version 2.0. By using this product, you acknowledge your consent 
+to be bound by the terms of Apache v2 license.
 
 If you need to use this framework for a project with a different licensing
 requirements, feel free to contact the author for more options.
@@ -53,4 +53,3 @@ requirements, feel free to contact the author for more options.
 Some of the included artwork was made by Humberto Andrade and is copyright
 protected. Any redistribution of this artwork outside of the framework is
 strictly prohibited.
-

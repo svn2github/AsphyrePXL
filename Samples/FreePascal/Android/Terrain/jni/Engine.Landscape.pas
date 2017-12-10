@@ -1,16 +1,16 @@
 unit Engine.Landscape;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 uses
@@ -49,48 +49,48 @@ type
 
     procedure AnimateHeights;
 
-    function GetTileHeightSafe(const IsoPos: TPoint2px; const Corner: VectorInt): VectorInt; inline;
-    function GetTileLightSafe(const IsoPos: TPoint2px; const Corner: VectorInt): VectorInt; inline;
+    function GetTileHeightSafe(const IsoPos: TPoint2i; const Corner: VectorInt): VectorInt; inline;
+    function GetTileLightSafe(const IsoPos: TPoint2i; const Corner: VectorInt): VectorInt; inline;
 
     property Entries[const X, Y: Integer]: PMapEntry read GetEntry;
   end;
 
 { Converts native isometric coordinates into 45-degree rotated linear 2D coordinates. }
-function IsoToLinear(const IsoPos: TPoint2px): TPoint2px;
+function IsoToLinear(const IsoPos: TPoint2i): TPoint2i;
 
 { Converts 45-degree rotated linear 2D coordinates into true isometric coordinates. }
-function LinearToIso(const LinePos: TPoint2px): TPoint2px;
+function LinearToIso(const LinePos: TPoint2i): TPoint2i;
 
 { Takes natural 2D pixel position and calculates native isometric coordinates of the tile underneath. }
-function PositionToIso(const Position, TileSize: TPoint2px): TPoint2px;
+function PositionToIso(const Position, TileSize: TPoint2i): TPoint2i;
 
 { Returns top/left 2D pixel position of isometric tile at the given native isometric coordinates. }
-function IsoToPosition(const IsoPos, TileSize: TPoint2px): TPoint2px;
+function IsoToPosition(const IsoPos, TileSize: TPoint2i): TPoint2i;
 
 implementation
 
 uses
   Math;
 
-function IsoToLinear(const IsoPos: TPoint2px): TPoint2px;
+function IsoToLinear(const IsoPos: TPoint2i): TPoint2i;
 begin
  Result.Y := (IsoPos.Y div 2) - IsoPos.X;
  Result.X := IsoPos.X + (IsoPos.Y mod 2) + (IsoPos.Y div 2);
 end;
 
-function LinearToIso(const LinePos: TPoint2px): TPoint2px;
+function LinearToIso(const LinePos: TPoint2i): TPoint2i;
 begin
  Result.X := (LinePos.X  - LinePos.Y) div 2;
  Result.Y := LinePos.X + LinePos.Y;
 end;
 
-function PositionToIso(const Position, TileSize: TPoint2px): TPoint2px;
+function PositionToIso(const Position, TileSize: TPoint2i): TPoint2i;
 begin
  Result.Y := Position.Y div (TileSize.Y div 2);
  Result.X := (Position.X - ((Result.Y mod 2) * (TileSize.X div 2))) div TileSize.X;
 end;
 
-function IsoToPosition(const IsoPos, TileSize: TPoint2px): TPoint2px;
+function IsoToPosition(const IsoPos, TileSize: TPoint2i): TPoint2i;
 begin
  Result.Y := IsoPos.Y * (TileSize.Y div 2);
  Result.X := (IsoPos.X * TileSize.X) + ((IsoPos.Y mod 2) * (TileSize.X div 2));
@@ -130,14 +130,14 @@ end;
 procedure TLandscape.UpdateEntryHeights;
 var
   I, J, DeltaX, CurHeight, CurLight: VectorInt;
-  LinePos: TPoint2px;
+  LinePos: TPoint2i;
 begin
   for J := 1 to MapHeight - 2 do
     for I := 1 to MapWidth - 2 do
     begin
       DeltaX := 1 - (J mod 2);
 
-      LinePos := IsoToLinear(Point2px(I, J + 64));
+      LinePos := IsoToLinear(Point2i(I, J + 64));
       Dec(LinePos.X, 64);
 
       if (LinePos.X >= 0) and (LinePos.Y >= 0) and (LinePos.X < MapWidth) and (LinePos.Y < MapHeight div 2) then
@@ -158,13 +158,13 @@ begin
     end;
 end;
 
-function TLandscape.GetTileHeightSafe(const IsoPos: TPoint2px; const Corner: VectorInt): VectorInt;
+function TLandscape.GetTileHeightSafe(const IsoPos: TPoint2i; const Corner: VectorInt): VectorInt;
 begin
   Result := FMapEntries[Saturate(IsoPos.Y, 0, MapHeight - 1),
     Saturate(IsoPos.X, 0, MapWidth - 1)].Corners[Corner].Height;
 end;
 
-function TLandscape.GetTileLightSafe(const IsoPos: TPoint2px; const Corner: VectorInt): VectorInt;
+function TLandscape.GetTileLightSafe(const IsoPos: TPoint2i; const Corner: VectorInt): VectorInt;
 begin
   Result := FMapEntries[Saturate(IsoPos.Y, 0, MapHeight - 1),
     Saturate(IsoPos.X, 0, MapWidth - 1)].Corners[Corner].Light;

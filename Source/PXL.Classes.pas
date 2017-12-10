@@ -1,16 +1,16 @@
 unit PXL.Classes;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {< Extensions and utility classes that extend functionality of streams and provide ways for reading assets. }
 interface
 
@@ -164,22 +164,22 @@ type
     function GetWordIndex: TStreamWordIndex; inline;
 
     { Saves 2D integer point to the stream. Each coordinate is saved as 8-bit unsigned integer. }
-    procedure PutBytePoint2px(const Value: TPoint2px);
+    procedure PutBytePoint2px(const Value: TPoint2i);
 
     { Loads 2D integer point from the stream. Each coordinate is loaded as 8-bit unsigned integer. }
-    function GetBytePoint2px: TPoint2px;
+    function GetBytePoint2px: TPoint2i;
 
     { Saves 2D integer point to the stream. Each coordinate is saved as 16-bit unsigned integer. }
-    procedure PutWordPoint2px(const Value: TPoint2px);
+    procedure PutWordPoint2px(const Value: TPoint2i);
 
     { Loads 2D integer point from the stream. Each coordinate is loaded as 16-bit unsigned integer.}
-    function GetWordPoint2px: TPoint2px;
+    function GetWordPoint2px: TPoint2i;
 
     { Saves 2D integer point to the stream. Each coordinate is saved as 32-bit signed integer. }
-    procedure PutLongPoint2px(const Value: TPoint2px);
+    procedure PutLongPoint2px(const Value: TPoint2i);
 
     { Loads 2D integer point from the stream. Each coordinate is loaded as 32-bit signed integer. }
-    function GetLongPoint2px: TPoint2px;
+    function GetLongPoint2px: TPoint2i;
 
     { Saves floating-point value as 8-bit signed byte to the stream using 1:3:4 fixed-point format with values outside
       of [-8..7.9375] range will be clamped. }
@@ -626,18 +626,18 @@ begin
     Result := WordValue;
 end;
 
-procedure TStreamHelper.PutBytePoint2px(const Value: TPoint2px);
+procedure TStreamHelper.PutBytePoint2px(const Value: TPoint2i);
 var
   ByteValue: Byte;
 begin
-  if Value.X <> Undefined2px.X then
+  if Value.X <> Undefined2i.X then
     ByteValue := Saturate(Value.X, 0, 254)
   else
     ByteValue := 255;
 
   Write(ByteValue, SizeOf(Byte));
 
-  if Value.Y <> Undefined2px.Y then
+  if Value.Y <> Undefined2i.Y then
     ByteValue := Saturate(Value.Y, 0, 254)
   else
     ByteValue := 255;
@@ -645,7 +645,7 @@ begin
   Write(ByteValue, SizeOf(Byte));
 end;
 
-function TStreamHelper.GetBytePoint2px: TPoint2px;
+function TStreamHelper.GetBytePoint2px: TPoint2i;
 var
   ByteValue1, ByteValue2: Byte;
   ValueInvalid: Boolean;
@@ -659,18 +659,18 @@ begin
     ValueInvalid := True;
 
   if (ByteValue1 = 255) or (ByteValue2 = 255) or ValueInvalid then
-    Exit(Undefined2px);
+    Exit(Undefined2i);
 
   Result.X := ByteValue1;
   Result.Y := ByteValue2;
 end;
 
-procedure TStreamHelper.PutWordPoint2px(const Value: TPoint2px);
+procedure TStreamHelper.PutWordPoint2px(const Value: TPoint2i);
 var
   InpValue: TStreamWordIndex;
   WordValue: Word;
 begin
-  if Value.X <> Undefined2px.X then
+  if Value.X <> Undefined2i.X then
   begin
     InpValue := Value.X;
     WordValue := Saturate(InpValue, 0, 65534)
@@ -680,7 +680,7 @@ begin
 
   Write(WordValue, SizeOf(Word));
 
-  if Value.Y <> Undefined2px.Y then
+  if Value.Y <> Undefined2i.Y then
   begin
     InpValue := Value.Y;
     WordValue := Saturate(InpValue, 0, 65534)
@@ -691,7 +691,7 @@ begin
   Write(WordValue, SizeOf(Word));
 end;
 
-function TStreamHelper.GetWordPoint2px: TPoint2px;
+function TStreamHelper.GetWordPoint2px: TPoint2i;
 var
   WordValue1, WordValue2: Word;
   ValueInvalid: Boolean;
@@ -705,19 +705,19 @@ begin
     ValueInvalid := True;
 
   if (WordValue1 = 65535) or (WordValue2 = 65535) or ValueInvalid then
-    Exit(Undefined2px);
+    Exit(Undefined2i);
 
   Result.X := WordValue1;
   Result.Y := WordValue2;
 end;
 
-procedure TStreamHelper.PutLongPoint2px(const Value: TPoint2px);
+procedure TStreamHelper.PutLongPoint2px(const Value: TPoint2i);
 begin
   PutLongInt(Value.X);
   PutLongInt(Value.Y);
 end;
 
-function TStreamHelper.GetLongPoint2px: TPoint2px;
+function TStreamHelper.GetLongPoint2px: TPoint2i;
 begin
   Result.X := GetLongInt;
   Result.Y := GetLongInt;

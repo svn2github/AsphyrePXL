@@ -1,75 +1,66 @@
 unit PXL.Boards.Soft;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
-{$INCLUDE PXL.Config.inc}
+{$INCLUDE PXL.MicroConfig.inc}
 
 uses
-  SysUtils, PXL.Boards.Types;
+  PXL.Boards.Types;
 
 type
   TSoftSPI = class(TCustomPortSPI)
-  public const
-    DefaultFrequency = 0;
-    DefaultMode = 0;
   private
-    FGPIO: TCustomGPIO;
     FSystemCore: TCustomSystemCore;
+    FGPIO: TCustomGPIO;
 
-    FPinSCLK: Integer;
-    FPinMOSI: Integer;
-    FPinMISO: Integer;
-    FPinCS: Integer;
+    FPinSCLK: TPinIdentifier;
+    FPinMOSI: TPinIdentifier;
+    FPinMISO: TPinIdentifier;
+    FPinCS: TPinIdentifier;
 
-    FFrequency: Integer;
-    FMode: Integer;
-    FChipSelectAttributes: TChipSelectAttributes;
-    FDelayInterval: Integer;
+    FFrequency: Cardinal;
+    FMode: TSPIMode;
+    FDelayInterval: Cardinal;
 
-    function GetInitialValueSCLK: Integer; inline;
-    function GetInitialValueCS: Integer; inline;
-    procedure SetChipSelect(const ValueCS: Integer); inline;
-    procedure FlipClock(var ValueSCLK: Integer); inline;
+    function GetInitialValueSCLK: Cardinal;
+    function GetInitialValueCS: Cardinal;
+    procedure SetChipSelect(const ValueCS: Cardinal);
+    procedure FlipClock(var ValueSCLK: Cardinal);
   protected
-    function GetMode: Integer; override;
-    procedure SetMode(const Value: Integer); override;
-    function GetBitsPerWord: Integer; override;
-    procedure SetBitsPerWord(const Value: Integer); override;
-    function GetFrequency: Integer; override;
-    procedure SetFrequency(const Value: Integer); override;
-    function GetChipSelectAttributes: TChipSelectAttributes; override;
-    procedure SetChipSelectAttributes(const Value: TChipSelectAttributes); override;
+    function GetFrequency: Cardinal; override;
+    procedure SetFrequency(const Value: Cardinal); override;
+    function GetBitsPerWord: TBitsPerWord; override;
+    procedure SetBitsPerWord(const Value: TBitsPerWord); override;
+    function GetMode: TSPIMode; override;
+    procedure SetMode(const Value: TSPIMode); override;
   public
     constructor Create(const ASystemCore: TCustomSystemCore; const AGPIO: TCustomGPIO; const APinSCLK, APinMOSI,
-      APinMISO, APinCS: Integer; const AFrequency: Integer = DefaultFrequency; const AMode: Integer = DefaultMode);
+      APinMISO, APinCS: TPinIdentifier; const AChipSelectMode: TChipSelectMode = TChipSelectMode.ActiveLow);
     destructor Destroy; override;
 
-    function Read(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function Write(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function Transfer(const ReadBuffer, WriteBuffer: Pointer; const BufferSize: Integer): Integer; override;
+    function Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
 
-    property GPIO: TCustomGPIO read FGPIO;
+    function Transfer(const ReadBuffer, WriteBuffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+
     property SystemCore: TCustomSystemCore read FSystemCore;
+    property GPIO: TCustomGPIO read FGPIO;
 
-    property PinSCLK: Integer read FPinSCLK;
-    property PinMOSI: Integer read FPinMOSI;
-    property PinMISO: Integer read FPinMISO;
-    property PinCS: Integer read FPinCS;
-
-    property Mode: Integer read FMode write SetMode;
-    property Frequency: Integer read FFrequency write SetFrequency;
-    property ChipSelectAttributes: TChipSelectAttributes read FChipSelectAttributes write FChipSelectAttributes;
+    property PinSCLK: TPinIdentifier read FPinSCLK;
+    property PinMOSI: TPinIdentifier read FPinMOSI;
+    property PinMISO: TPinIdentifier read FPinMISO;
+    property PinCS: TPinIdentifier read FPinCS;
   end;
 
   TSoftUART = class(TCustomPortUART)
@@ -77,91 +68,66 @@ type
     DefaultReadTimeout = 100; // ms
   private
     FGPIO: TCustomGPIO;
-    FSystemCore: TCustomSystemCore;
-    FPinTX: Integer;
-    FPinRX: Integer;
-    FBaudRate: Integer;
 
-    function CalculatePeriod(const ElapsedTime: UInt64): Cardinal; inline;
-    procedure WaitForPeriod(const StartTime: UInt64; const Period: Cardinal); inline;
+    FPinTX: TPinIdentifier;
+    FPinRX: TPinIdentifier;
+
+    FBaudRate: Cardinal;
+
+    function CalculatePeriod(const ElapsedTime: TTickCounter): Cardinal;
+    procedure WaitForPeriod(const StartTime: TTickCounter; const Period: Cardinal);
   protected
-    function GetBaudRate: Integer; override;
-    procedure SetBaudRate(const Value: Integer); override;
-    function GetBitsPerWord: Integer; override;
-    procedure SetBitsPerWord(const Value: Integer); override;
+    function GetBaudRate: Cardinal; override;
+    procedure SetBaudRate(const Value: Cardinal); override;
+    function GetBitsPerWord: TBitsPerWord; override;
+    procedure SetBitsPerWord(const Value: TBitsPerWord); override;
     function GetParity: TParity; override;
     procedure SetParity(const Value: TParity); override;
     function GetStopBits: TStopBits; override;
     procedure SetStopBits(const Value: TStopBits); override;
   public
-    constructor Create(const ASystemCore: TCustomSystemCore; const AGPIO: TCustomGPIO; const APinTX, APinRX: Integer);
+    constructor Create(const ASystemCore: TCustomSystemCore; const AGPIO: TCustomGPIO;
+      const APinTX, APinRX: TPinIdentifier);
     destructor Destroy; override;
 
-    function Write(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
-    function Read(const Buffer: Pointer; const BufferSize: Integer): Integer; override;
+    function Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
+    function Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal; override;
 
-    function ReadBuffer(const Buffer: Pointer; const BufferSize, Timeout: Integer): Integer; override;
-    function WriteBuffer(const Buffer: Pointer; const BufferSize, Timeout: Integer): Integer; override;
+    function ReadBuffer(const Buffer: Pointer; const BufferSize, Timeout: Cardinal): Cardinal; override;
+    function WriteBuffer(const Buffer: Pointer; const BufferSize, Timeout: Cardinal): Cardinal; override;
 
     procedure Flush; override;
 
-    property BaudRate: Integer read FBaudRate write SetBaudRate;
+    property PinTX: TPinIdentifier read FPinTX;
+    property PinRX: TPinIdentifier read FPinRX;
   end;
-
-  ESoftDataPortGeneric = class(Exception);
-  EGPIORefRequired = class(ESoftDataPortGeneric);
-
-  ESoftSPIGeneric = class(ESoftDataPortGeneric);
-
-  ESoftSPIUnsupported = class(ESoftSPIGeneric);
-  ESoftSPIUnsupportedMode = class(ESoftSPIUnsupported);
-  ESoftSPIUnsupportedBitsPerWord = class(ESoftSPIUnsupported);
-  ESoftSPIUnsupportedFrequency = class(ESoftSPIUnsupported);
-
-  ESoftSPIInvalidParameters = class(ESoftSPIGeneric);
-
-resourcestring
-  SGPIOReferenceNotProvided = 'Reference to GPIO has not been provided.';
-  SSoftSPIUnsupportedMode = 'The specified SPI mode <%d> is not supported.';
-  SSoftSPIUnsupportedBitsPerWord = 'The specified SPI bits per word <%d> are not supported.';
-  SSoftSPIUnsupportedFrequency = 'The specified SPI frequency <%d> is not supported.';
-  SSoftSPIInvalidParameters = 'The specified function parameters are invalid.';
 
 implementation
 
 {$REGION 'TSoftSPI'}
 
-constructor TSoftSPI.Create(const ASystemCore: TCustomSystemCore; const AGPIO: TCustomGPIO; const APinSCLK, APinMOSI,
-  APinMISO, APinCS, AFrequency, AMode: Integer);
+constructor TSoftSPI.Create(const ASystemCore: TCustomSystemCore; const AGPIO: TCustomGPIO; const APinSCLK,
+  APinMOSI, APinMISO, APinCS: TPinIdentifier; const AChipSelectMode: TChipSelectMode);
 begin
-  inherited Create;
+  inherited Create(AChipSelectMode);
 
   FSystemCore := ASystemCore;
-
   FGPIO := AGPIO;
-  if FGPIO = nil then
-    raise EGPIORefRequired.Create(ClassName + ExceptionClassNameSeparator + SGPIOReferenceNotProvided);
 
   FPinSCLK := APinSCLK;
   FPinMOSI := APinMOSI;
   FPinMISO := APinMISO;
   FPinCS := APinCS;
 
-  FMode := -1;
-  SetMode(AMode);
-
-  FFrequency := -1;
-  SetFrequency(AFrequency);
-
   FGPIO.PinMode[FPinSCLK] := TPinMode.Output;
 
-  if FPinMOSI <> -1 then
+  if FPinMOSI <> PinDisabled then
     FGPIO.PinMode[FPinMOSI] := TPinMode.Output;
 
-  if FPinMISO <> -1 then
+  if FPinMISO <> PinDisabled then
     FGPIO.PinMode[FPinMISO] := TPinMode.Output;
 
-  if FPinCS <> -1 then
+  if FPinCS <> PinDisabled then
   begin
     FGPIO.PinMode[FPinCS] := TPinMode.Output;
     FGPIO.PinValue[FPinCS] := TPinValue.High;
@@ -170,13 +136,13 @@ end;
 
 destructor TSoftSPI.Destroy;
 begin
-  if FPinCS <> -1 then
+  if FPinCS <> PinDisabled then
     FGPIO.PinMode[FPinCS] := TPinMode.Input;
 
-  if FPinMISO <> -1 then
+  if FPinMISO <> PinDisabled then
     FGPIO.PinMode[FPinMISO] := TPinMode.Input;
 
-  if FPinMOSI <> -1 then
+  if FPinMOSI <> PinDisabled then
     FGPIO.PinMode[FPinMOSI] := TPinMode.Input;
 
   FGPIO.PinMode[FPinSCLK] := TPinMode.Input;
@@ -184,94 +150,80 @@ begin
   inherited;
 end;
 
-function TSoftSPI.GetMode: Integer;
-begin
-  Result := FMode;
-end;
-
-procedure TSoftSPI.SetMode(const Value: Integer);
-begin
-  if (Value < 0) or (Value > 3) then
-    raise ESoftSPIUnsupportedMode.Create(Format(SSoftSPIUnsupportedMode, [Value]));
-
-  FMode := Value;
-end;
-
-function TSoftSPI.GetBitsPerWord: Integer;
-begin
-  Result := 8;
-end;
-
-procedure TSoftSPI.SetBitsPerWord(const Value: Integer);
-begin
-  if Value <> 8 then
-    raise ESoftSPIUnsupportedBitsPerWord.Create(Format(SSoftSPIUnsupportedBitsPerWord, [Value]));
-end;
-
-function TSoftSPI.GetFrequency: Integer;
+function TSoftSPI.GetFrequency: Cardinal;
 begin
   Result := FFrequency;
 end;
 
-procedure TSoftSPI.SetFrequency(const Value: Integer);
+procedure TSoftSPI.SetFrequency(const Value: Cardinal);
 begin
-  if (Value < 0) or (Value > 1000000) then
-    raise ESoftSPIUnsupportedFrequency.Create(Format(SSoftSPIUnsupportedFrequency, [Value]));
-
-  FFrequency := Value;
-
-  if (FFrequency <> 0) and (FSystemCore <> nil) then
-    FDelayInterval := 1000000 div FFrequency
+  if (Value <> 0) and (Value <= 1000000) and (FSystemCore <> nil) then
+  begin
+    FFrequency := Value;
+    FDelayInterval := 1000000 div FFrequency;
+  end
   else
+  begin
+    FFrequency := 0;
     FDelayInterval := 0;
+  end;
 end;
 
-function TSoftSPI.GetChipSelectAttributes: TChipSelectAttributes;
+function TSoftSPI.GetBitsPerWord: TBitsPerWord;
 begin
-  Result := FChipSelectAttributes;
+  Result := 8;
 end;
 
-procedure TSoftSPI.SetChipSelectAttributes(const Value: TChipSelectAttributes);
+procedure TSoftSPI.SetBitsPerWord(const Value: TBitsPerWord);
 begin
-  FChipSelectAttributes := Value;
 end;
 
-function TSoftSPI.GetInitialValueSCLK: Integer;
+function TSoftSPI.GetMode: TSPIMode;
 begin
-  if FMode and 2 > 0 then
+  Result := FMode;
+end;
+
+procedure TSoftSPI.SetMode(const Value: TSPIMode);
+begin
+  FMode := Value;
+end;
+
+function TSoftSPI.GetInitialValueSCLK: Cardinal;
+begin
+  if FMode and 2 <> 0 then
     Result := 0
   else
     Result := 1;
 end;
 
-function TSoftSPI.GetInitialValueCS: Integer;
+function TSoftSPI.GetInitialValueCS: Cardinal;
 begin
-  if TChipSelectAttribute.ActiveHigh in FChipSelectAttributes then
+  if FChipSelectMode = TChipSelectMode.ActiveHigh then
     Result := 1
   else
     Result := 0;
 end;
 
-procedure TSoftSPI.SetChipSelect(const ValueCS: Integer);
+procedure TSoftSPI.SetChipSelect(const ValueCS: Cardinal);
 begin
-  if FPinCS <> -1 then
+  if (FPinCS <> PinDisabled) and (FChipSelectMode <> TChipSelectMode.Disabled) then
     FGPIO.PinValue[FPinCS] := TPinValue(ValueCS);
 end;
 
-procedure TSoftSPI.FlipClock(var ValueSCLK: Integer);
+procedure TSoftSPI.FlipClock(var ValueSCLK: Cardinal);
 begin
   ValueSCLK := ValueSCLK xor 1;
   FGPIO.PinValue[FPinSCLK] := TPinValue(ValueSCLK);
 end;
 
-function TSoftSPI.Read(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSoftSPI.Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
-  I, BitIndex, ValueSCLK, ValueCS: Integer;
-  CycleStartTime: UInt64;
-  ReadValue: Cardinal;
+  ValueSCLK, ValueCS, ReadValue: Cardinal;
+  CycleStartTime: TTickCounter;
+  I, BitIndex: Integer;
 begin
-  if (Buffer = nil) or (BufferSize <= 0) then
-    raise ESoftSPIInvalidParameters.Create(SSoftSPIInvalidParameters);
+  if (Buffer = nil) or (BufferSize = 0) then
+    Exit(0);
 
   ValueSCLK := GetInitialValueSCLK;
   ValueCS := GetInitialValueCS;
@@ -288,13 +240,10 @@ begin
         if FDelayInterval <> 0 then
           CycleStartTime := FSystemCore.GetTickCount;
 
-        if FPinMISO <> -1 then
-        begin
-          if FGPIO.PinValue[FPinMISO] = TPinValue.High then
-            ReadValue := ReadValue or 1;
+        if FGPIO.PinValue[FPinMISO] = TPinValue.High then
+          ReadValue := ReadValue or 1;
 
-          ReadValue := ReadValue shl 1;
-        end;
+        ReadValue := ReadValue shl 1;
 
         FlipClock(ValueSCLK);
 
@@ -313,14 +262,14 @@ begin
   Result := BufferSize;
 end;
 
-function TSoftSPI.Write(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSoftSPI.Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
-  I, BitIndex, ValueSCLK, ValueCS: Integer;
-  CycleStartTime: UInt64;
-  WriteValue: Cardinal;
+  ValueSCLK, ValueCS, WriteValue: Cardinal;
+  CycleStartTime: TTickCounter;
+  I, BitIndex: Integer;
 begin
-  if (Buffer = nil) or (BufferSize <= 0) then
-    raise ESoftSPIInvalidParameters.Create(SSoftSPIInvalidParameters);
+  if (Buffer = nil) or (BufferSize = 0) then
+    Exit(0);
 
   ValueSCLK := GetInitialValueSCLK;
   ValueCS := GetInitialValueCS;
@@ -337,15 +286,12 @@ begin
         if FDelayInterval <> 0 then
           CycleStartTime := FSystemCore.GetTickCount;
 
-        if FPinMOSI <> -1 then
-        begin
-          if WriteValue and $80 > 0 then
-            FGPIO.PinValue[FPinMOSI] := TPinValue.High
-          else
-            FGPIO.PinValue[FPinMOSI] := TPinValue.Low;
+        if WriteValue and $80 > 0 then
+          FGPIO.PinValue[FPinMOSI] := TPinValue.High
+        else
+          FGPIO.PinValue[FPinMOSI] := TPinValue.Low;
 
-          WriteValue := WriteValue shl 1;
-        end;
+        WriteValue := WriteValue shl 1;
 
         FlipClock(ValueSCLK);
 
@@ -362,14 +308,14 @@ begin
   Result := BufferSize;
 end;
 
-function TSoftSPI.Transfer(const ReadBuffer, WriteBuffer: Pointer; const BufferSize: Integer): Integer;
+function TSoftSPI.Transfer(const ReadBuffer, WriteBuffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
-  I, BitIndex, ValueSCLK, ValueCS: Integer;
-  CycleStartTime: UInt64;
-  WriteValue, ReadValue: Cardinal;
+  ValueSCLK, ValueCS, WriteValue, ReadValue: Cardinal;
+  CycleStartTime: TTickCounter;
+  I, BitIndex: Integer;
 begin
-  if ((ReadBuffer = nil) and (WriteBuffer = nil)) or (BufferSize <= 0) then
-    raise ESoftSPIInvalidParameters.Create(SSoftSPIInvalidParameters);
+  if ((ReadBuffer = nil) and (WriteBuffer = nil)) or (BufferSize = 0) then
+    Exit(0);
 
   ValueSCLK := GetInitialValueSCLK;
   ValueCS := GetInitialValueCS;
@@ -391,7 +337,7 @@ begin
         if FDelayInterval <> 0 then
           CycleStartTime := FSystemCore.GetTickCount;
 
-        if FPinMOSI <> -1 then
+        if FPinMOSI <> PinDisabled then
         begin
           if WriteValue and $80 > 0 then
             FGPIO.PinValue[FPinMOSI] := TPinValue.High
@@ -401,7 +347,7 @@ begin
           WriteValue := WriteValue shl 1;
         end;
 
-        if FPinMISO <> -1 then
+        if FPinMISO <> PinDisabled then
         begin
           if FGPIO.PinValue[FPinMISO] = TPinValue.High then
             ReadValue := ReadValue or 1;
@@ -431,47 +377,49 @@ end;
 {$REGION 'TSoftUART'}
 
 constructor TSoftUART.Create(const ASystemCore: TCustomSystemCore; const AGPIO: TCustomGPIO; const APinTX,
-  APinRX: Integer);
+  APinRX: TPinIdentifier);
 begin
-  inherited Create;
-
-  FSystemCore := ASystemCore;
+  inherited Create(ASystemCore);
 
   FGPIO := AGPIO;
-  if FGPIO = nil then
-    raise EGPIORefRequired.Create(ClassName + ExceptionClassNameSeparator + SGPIOReferenceNotProvided);
 
   FPinTX := APinTX;
   FPinRX := APinRX;
 
-  FGPIO.PinMode[FPinTX] := TPinMode.Output;
-  FGPIO.PinValue[FPinTX] := TPinValue.High;
-  FGPIO.PinMode[FPinRX] := TPinMode.Input;
+  if FPinTX <> PinDisabled then
+  begin
+    FGPIO.PinMode[FPinTX] := TPinMode.Output;
+    FGPIO.PinValue[FPinTX] := TPinValue.High;
+  end;
+
+  if FPinRX <> PinDisabled then
+    FGPIO.PinMode[FPinRX] := TPinMode.Input;
 end;
 
 destructor TSoftUART.Destroy;
 begin
-  FGPIO.PinMode[FPinTX] := TPinMode.Input;
+  if FPinTX <> PinDisabled then
+    FGPIO.PinMode[FPinTX] := TPinMode.Input;
 
   inherited;
 end;
 
-function TSoftUART.GetBaudRate: Integer;
+function TSoftUART.GetBaudRate: Cardinal;
 begin
   Result := FBaudRate;
 end;
 
-procedure TSoftUART.SetBaudRate(const Value: Integer);
+procedure TSoftUART.SetBaudRate(const Value: Cardinal);
 begin
   FBaudRate := Value;
 end;
 
-function TSoftUART.GetBitsPerWord: Integer;
+function TSoftUART.GetBitsPerWord: TBitsPerWord;
 begin
   Result := 8;
 end;
 
-procedure TSoftUART.SetBitsPerWord(const Value: Integer);
+procedure TSoftUART.SetBitsPerWord(const Value: TBitsPerWord);
 begin
 end;
 
@@ -493,12 +441,12 @@ procedure TSoftUART.SetStopBits(const Value: TStopBits);
 begin
 end;
 
-function TSoftUART.CalculatePeriod(const ElapsedTime: UInt64): Cardinal;
+function TSoftUART.CalculatePeriod(const ElapsedTime: TTickCounter): Cardinal;
 begin
   Result := (UInt64(FBaudRate) * ElapsedTime) div 1000000;
 end;
 
-procedure TSoftUART.WaitForPeriod(const StartTime: UInt64; const Period: Cardinal);
+procedure TSoftUART.WaitForPeriod(const StartTime: TTickCounter; const Period: Cardinal);
 var
   Current: Cardinal;
 begin
@@ -507,19 +455,18 @@ begin
   until Current >= Period;
 end;
 
-function TSoftUART.Write(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSoftUART.Write(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 var
-  StartTime: UInt64;
-  Period: Cardinal;
+  StartTime: TTickCounter;
+  Period, BitMask, Value: Cardinal;
   I: Integer;
-  BitMask, Value: Cardinal;
 begin
   for I := 0 to BufferSize - 1 do
   begin
     FGPIO.PinValue[FPinTX] := TPinValue.Low;
 
     // Start sending data a bit earlier to ensure that receiver will sample data correctly.
-    FSystemCore.Delay(UInt64(1000000 * 3) div (UInt64(FBaudRate) * 5));
+    FSystemCore.MicroDelay(TTickCounter(1000000 * 3) div (TTickCounter(FBaudRate) * 5));
 
     Period := 0;
     StartTime := FSystemCore.GetTickCount;
@@ -549,21 +496,20 @@ begin
   Result := BufferSize;
 end;
 
-function TSoftUART.Read(const Buffer: Pointer; const BufferSize: Integer): Integer;
+function TSoftUART.Read(const Buffer: Pointer; const BufferSize: Cardinal): Cardinal;
 begin
   Result := ReadBuffer(Buffer, BufferSize, DefaultReadTimeout);
 end;
 
-function TSoftUART.ReadBuffer(const Buffer: Pointer; const BufferSize, Timeout: Integer): Integer;
+function TSoftUART.ReadBuffer(const Buffer: Pointer; const BufferSize, Timeout: Cardinal): Cardinal;
 var
-  StartTime, TimeoutStart, TimeoutMicroSec: UInt64;
-  Period, BitMask, Value: Cardinal;
-  BytesReceived: Integer;
+  StartTime, TimeoutStart, TimeoutMicroSec: TTickCounter;
+  Period, BitMask, Value, BytesReceived: Cardinal;
 begin
   BytesReceived := 0;
 
-  if Timeout > 0 then
-    TimeoutMicrosec := UInt64(Timeout) * 1000
+  if Timeout <> 0 then
+    TimeoutMicrosec := TTickCounter(Timeout) * 1000
   else
     TimeoutMicrosec := DefaultReadTimeout * 1000;
 
@@ -584,7 +530,7 @@ begin
     until FGPIO.PinValue[FPinRX] = TPinValue.Low;
 
     // Once start bit is received, wait for another 1/3rd of baud to sort of center next samples.
-    FSystemCore.Delay(UInt64(1000000) div (UInt64(FBaudRate) * UInt64(4)));
+    FSystemCore.MicroDelay(TTickCounter(1000000) div (TTickCounter(FBaudRate) * TTickCounter(4)));
 
     // Start receiving next byte.
     BitMask := 1;
@@ -615,7 +561,7 @@ begin
   Result := BytesReceived;
 end;
 
-function TSoftUART.WriteBuffer(const Buffer: Pointer; const BufferSize, Timeout: Integer): Integer;
+function TSoftUART.WriteBuffer(const Buffer: Pointer; const BufferSize, Timeout: Cardinal): Cardinal;
 begin
   Result := Write(Buffer, BufferSize);
 end;

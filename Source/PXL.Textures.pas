@@ -1,16 +1,16 @@
 unit PXL.Textures;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {< Abstract texture specification with basic implementation that is common across different providers and platforms. }
 interface
 
@@ -97,8 +97,8 @@ type
     procedure SetWidth(const Value: Integer);
     procedure SetHeight(const Value: Integer);
 
-    function GetSize: TPoint2px;
-    procedure SetSize(const Value: TPoint2px);
+    function GetSize: TPoint2i;
+    procedure SetSize(const Value: TPoint2i);
 
     procedure SetMipMapping(const Value: Boolean);
     procedure SetPremultipliedAlpha(const Value: Boolean);
@@ -135,7 +135,7 @@ type
     { This method is called by @link(CopyRect) and should provide copy mechanism between this and other textures
       available on given provider. }
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; virtual;
+      const DestPos: TPoint2i): Boolean; virtual;
   public
     { Creates new instance of texture bound to the specific device. }
     constructor Create(const ADevice: TCustomDevice; const AutoSubscribe: Boolean); virtual;
@@ -149,7 +149,7 @@ type
 
     { Copies a portion of source texture area to this one. This function handles the clipping and possibly pixel
       format conversion. @True is returned when the operation succeeds and @False otherwise. }
-    function CopyRect(DestPos: TPoint2px; const Source: TCustomBaseTexture; SourceRect: TIntRect): Boolean;
+    function CopyRect(DestPos: TPoint2i; const Source: TCustomBaseTexture; SourceRect: TIntRect): Boolean;
 
     { Copies the entire source texture area to this one. If the sizes of both textures do not match, then intersection
       of both will be copied. This function handles the clipping and possibly pixel format conversion. @True is
@@ -191,7 +191,7 @@ type
 
     { Determines the texture size in pixels. This can be written to only before the texture is initialized, but can
       be read at any time. }
-    property Size: TPoint2px read GetSize write SetSize;
+    property Size: TPoint2i read GetSize write SetSize;
 
     { Determines whether the texture uses mipmapping or not. Mipmapping can improve visual quality when the texture is
       drawn in different sizes, especially in smaller ones. This can be written to only before the texture is
@@ -259,7 +259,7 @@ type
       on CPU. For typical applications this could be okay, but it is generally inefficient and should be re-implemented
       by derived classes to provide copy mechanism directly on the GPU. }
     function DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-      const DestPos: TPoint2px): Boolean; override;
+      const DestPos: TPoint2i): Boolean; override;
   public
     { Locks a portion of texture so that it can be accessed by CPU and provides information in @link(TLockedPixels)
       structure regarding this area. }
@@ -287,7 +287,7 @@ type
 
     { Copies a portion from source surface to this texture. This method does clipping when applicable and calls
       @link(Lock) / @link(Unlock) method pair appropriately during the process. }
-    function CopyFromSurfaceRect(DestPos: TPoint2px; const Source: TPixelSurface; SourceRect: TIntRect): Boolean;
+    function CopyFromSurfaceRect(DestPos: TPoint2i; const Source: TPixelSurface; SourceRect: TIntRect): Boolean;
 
     { Copies an entire source surface to this texture. This method does clipping when applicable and calls
       @link(Lock) / @link(Unlock) method pair appropriately during the process. }
@@ -295,7 +295,7 @@ type
 
     { Copies a region of this texture to the specified destination surface. This method does clipping when
       applicable and calls @link(Lock) / @link(Unlock) method pair appropriately during the process.}
-    function CopyToSurfaceRect(DestPos: TPoint2px; const Dest: TPixelSurface; SourceRect: TIntRect): Boolean;
+    function CopyToSurfaceRect(DestPos: TPoint2i; const Dest: TPixelSurface; SourceRect: TIntRect): Boolean;
 
     { Copies the entire contents of this texture to the specified destination surface. This method does clipping when
       applicable and calls @link(Lock) / @link(Unlock) method pair appropriately during the process.}
@@ -347,7 +347,7 @@ const
   { Special constant that defines @link(TLockedPixels) that have all fields set to zero, meaning that the data is no
     longer valid. }
   InvalidLockedPixels: TLockedPixels = (Bits: nil; Pitch: 0; BytesPerPixel: 0; PixelFormat: TPixelFormat.Unknown;
-    LockedRect: (Left: 0; Top: 0; Right: 0; Bottom: 0));
+    LockedRect: (Left: 0; Top: 0; Width: 0; Height: 0));
 
 implementation
 
@@ -448,12 +448,12 @@ begin
     FHeight := Value;
 end;
 
-function TCustomBaseTexture.GetSize: TPoint2px;
+function TCustomBaseTexture.GetSize: TPoint2i;
 begin
-  Result := Point2px(FWidth, FHeight);
+  Result := Point2i(FWidth, FHeight);
 end;
 
-procedure TCustomBaseTexture.SetSize(const Value: TPoint2px);
+procedure TCustomBaseTexture.SetSize(const Value: TPoint2i);
 begin
   if FState = TTextureState.NotInitialized then
   begin
@@ -513,21 +513,21 @@ begin
 end;
 
 function TCustomBaseTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 begin
   Result := False;
 end;
 
-function TCustomBaseTexture.CopyRect(DestPos: TPoint2px; const Source: TCustomBaseTexture;
+function TCustomBaseTexture.CopyRect(DestPos: TPoint2i; const Source: TCustomBaseTexture;
   SourceRect: TIntRect): Boolean;
 begin
   if (FState <> TTextureState.Initialized) or (Source = nil) or (Source.State <> TTextureState.Initialized) then
     Exit(False);
 
   if SourceRect.Empty then
-    SourceRect := IntRect(ZeroPoint2px, Source.Size);
+    SourceRect := IntRect(ZeroPoint2i, Source.Size);
 
-  if not ClipCoords(Source.Size, GetSize, SourceRect, DestPos) then
+  if not TIntRect.ClipCoords(Source.Size, GetSize, SourceRect, DestPos) then
     Exit(False);
 
   Result := DoCopyRect(Source, SourceRect, DestPos);
@@ -535,7 +535,7 @@ end;
 
 function TCustomBaseTexture.CopyFrom(const Source: TCustomBaseTexture): Boolean;
 begin
-  Result := CopyRect(ZeroPoint2px, Source, ZeroIntRect);
+  Result := CopyRect(ZeroPoint2i, Source, ZeroIntRect);
 end;
 
 function TCustomBaseTexture.Bind(const Channel: Integer): Boolean;
@@ -712,7 +712,7 @@ begin
 end;
 
 function TCustomLockableTexture.DoCopyRect(const Source: TCustomBaseTexture; const SourceRect: TIntRect;
-  const DestPos: TPoint2px): Boolean;
+  const DestPos: TPoint2i): Boolean;
 var
   SourceSurface, DestSurface: TPixelSurface;
 begin
@@ -755,7 +755,7 @@ begin
   end;
 end;
 
-function TCustomLockableTexture.CopyFromSurfaceRect(DestPos: TPoint2px; const Source: TPixelSurface;
+function TCustomLockableTexture.CopyFromSurfaceRect(DestPos: TPoint2i; const Source: TPixelSurface;
   SourceRect: TIntRect): Boolean;
 var
   Surface: TPixelSurface;
@@ -764,15 +764,15 @@ begin
     Exit(False);
 
   if SourceRect.Empty then
-    SourceRect := IntRect(ZeroPoint2px, Source.Size);
+    SourceRect := IntRect(ZeroPoint2i, Source.Size);
 
-  if not ClipCoords(Source.Size, GetSize, SourceRect, DestPos) then
+  if not TIntRect.ClipCoords(Source.Size, GetSize, SourceRect, DestPos) then
     Exit(False);
 
   if not Lock(IntRect(DestPos.X, DestPos.Y, SourceRect.Width, SourceRect.Height), Surface) then
     Exit(False);
   try
-    Result := Surface.CopyRect(ZeroPoint2px, Source, SourceRect);
+    Result := Surface.CopyRect(ZeroPoint2i, Source, SourceRect);
   finally
     Surface.Free;
   end;
@@ -794,7 +794,7 @@ begin
   end;
 end;
 
-function TCustomLockableTexture.CopyToSurfaceRect(DestPos: TPoint2px; const Dest: TPixelSurface;
+function TCustomLockableTexture.CopyToSurfaceRect(DestPos: TPoint2i; const Dest: TPixelSurface;
   SourceRect: TIntRect): Boolean;
 var
   Surface: TPixelSurface;
@@ -803,9 +803,9 @@ begin
     Exit(False);
 
   if SourceRect.Empty then
-    SourceRect := IntRect(ZeroPoint2px, GetSize);
+    SourceRect := IntRect(ZeroPoint2i, GetSize);
 
-  if not ClipCoords(GetSize, Dest.Size, SourceRect, DestPos) then
+  if not TIntRect.ClipCoords(GetSize, Dest.Size, SourceRect, DestPos) then
     Exit(False);
 
   if not Lock(SourceRect, Surface) then

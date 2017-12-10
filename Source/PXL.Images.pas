@@ -1,16 +1,16 @@
 unit PXL.Images;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {< Atlas images that may contain one or more textures and multiple regions, optimized for rendering with the canvas. }
 interface
 
@@ -94,12 +94,12 @@ type
           @code(PatternSize) or be smaller.)
         @param(PatternCount Determines the total number of patterns inside the image. The total number of resulting
           regions will be equal or smaller than this number.) }
-    procedure SetupRegionPatterns(const PatternSize: TPoint2px; VisibleSize: TPoint2px;
+    procedure SetupRegionPatterns(const PatternSize: TPoint2i; VisibleSize: TPoint2i;
       const PatternCount: Integer = 0); overload;
 
     { Configures the list of regions as if they were rectangular patterns in the image tiled horizontally in series of
       rows and columns. This fills @link(Regions) with new data. }
-    procedure SetupRegionPatterns(const PatternSize: TPoint2px); overload; inline;
+    procedure SetupRegionPatterns(const PatternSize: TPoint2i); overload; inline;
 
     { Restores the image after its texture surfaces have been lost (that is, after @link(DeviceRelease) call). Note
       that this method should only be called when @code(ASubscribedTextures) has been set to @False during creation. }
@@ -518,7 +518,7 @@ begin
   end;
 end;
 
-procedure TAtlasImage.SetupRegionPatterns(const PatternSize: TPoint2px; VisibleSize: TPoint2px;
+procedure TAtlasImage.SetupRegionPatterns(const PatternSize: TPoint2i; VisibleSize: TPoint2i;
   const PatternCount: Integer);
 var
   Texture: TCustomLockableTexture;
@@ -568,9 +568,9 @@ begin
   end;
 end;
 
-procedure TAtlasImage.SetupRegionPatterns(const PatternSize: TPoint2px);
+procedure TAtlasImage.SetupRegionPatterns(const PatternSize: TPoint2i);
 begin
-  SetupRegionPatterns(PatternSize, ZeroPoint2px);
+  SetupRegionPatterns(PatternSize, ZeroPoint2i);
 end;
 
 function TAtlasImage.DeviceRestore: Boolean;

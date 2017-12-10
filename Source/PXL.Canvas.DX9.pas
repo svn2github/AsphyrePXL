@@ -1,16 +1,16 @@
 unit PXL.Canvas.DX9;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -96,14 +96,14 @@ type
     function GetClipRect: TIntRect; override;
     procedure SetClipRect(const Value: TIntRect); override;
   public
-    procedure PutPixel(const Point: TPoint2; const Color: TIntColor); override;
-    procedure Line(const Point1, Point2: TPoint2; const Color: TIntColor2); override;
+    procedure PutPixel(const Point: TPoint2f; const Color: TIntColor); override;
+    procedure Line(const Point1, Point2f: TPoint2f; const Color: TColorPair); override;
 
-    procedure DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+    procedure DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
       const VertexCount, TriangleCount: Integer;
       const BlendingEffect: TBlendingEffect = TBlendingEffect.Normal); override;
 
-    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
       const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
       const BlendingEffect: TBlendingEffect = TBlendingEffect.Normal); override;
 
@@ -430,7 +430,7 @@ begin
   Inc(FCurrentIndexCount);
 end;
 
-procedure TDX9Canvas.PutPixel(const Point: TPoint2; const Color: TIntColor);
+procedure TDX9Canvas.PutPixel(const Point: TPoint2f; const Color: TIntColor);
 var
   VertexEntry: PVertexRecord;
 begin
@@ -446,7 +446,7 @@ begin
   Inc(FCurrentPrimitiveCount);
 end;
 
-procedure TDX9Canvas.Line(const Point1, Point2: TPoint2; const Color: TIntColor2);
+procedure TDX9Canvas.Line(const Point1, Point2f: TPoint2f; const Color: TColorPair);
 var
   VertexEntry: PVertexRecord;
 begin
@@ -460,20 +460,20 @@ begin
   Inc(FCurrentVertexCount);
 
   VertexEntry := NextVertexEntry;
-  VertexEntry.Vertex.X := Point2.X;
-  VertexEntry.Vertex.Y := Point2.Y;
+  VertexEntry.Vertex.X := Point2f.X;
+  VertexEntry.Vertex.Y := Point2f.Y;
   VertexEntry.Color := Color.Second;
   Inc(FCurrentVertexCount);
 
   Inc(FCurrentPrimitiveCount);
 end;
 
-procedure TDX9Canvas.DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+procedure TDX9Canvas.DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
   const VertexCount, TriangleCount: Integer; const BlendingEffect: TBlendingEffect);
 var
   VertexEntry: PVertexRecord;
   SourceIndex: PLongInt;
-  SourceVertex: PPoint2;
+  SourceVertex: PPoint2f;
   SourceColor: PIntColor;
   I: Integer;
 begin
@@ -506,14 +506,14 @@ begin
   Inc(FCurrentPrimitiveCount, TriangleCount);
 end;
 
-procedure TDX9Canvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+procedure TDX9Canvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
   const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
   const BlendingEffect: TBlendingEffect);
 var
   VertexEntry: PVertexRecord;
   SourceIndex: PLongInt;
-  SourceVertex: PPoint2;
-  SourceTexCoord: PPoint2;
+  SourceVertex: PPoint2f;
+  SourceTexCoord: PPoint2f;
   SourceColor: PIntColor;
   I: Integer;
 begin

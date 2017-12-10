@@ -1,16 +1,16 @@
 unit PXL.Bitmaps;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {< High-level bitmaps that in addition to store image data have canvas and can be drawn into. }
 interface
 
@@ -74,7 +74,7 @@ type
     function GetCurrentTexture: TCustomBaseTexture;
     function GetCanvas: TCustomCanvas;
 
-    function GetSize: TPoint2px;
+    function GetSize: TPoint2i;
     procedure SetPixelFormat(const Value: TPixelFormat);
     procedure SetWidth(const Value: Integer);
     procedure SetHeight(const Value: Integer);
@@ -126,7 +126,7 @@ type
     procedure SetSize(const NewWidth, NewHeight: Integer); overload;
 
     { Changes bitmap size to new value preserving original data as much as possible. }
-    procedure SetSize(const NewSize: TPoint2px); overload; inline;
+    procedure SetSize(const NewSize: TPoint2i); overload; inline;
 
     { Loads bitmap from external file. This may change current pixel format, size and storage type. The function uses
       image format manager reference provided by the associated device.}
@@ -183,7 +183,7 @@ type
     property Height: Integer read FHeight write SetHeight;
 
     { Size of bitmap in pixels. Changing this preserves image contents as much as possible. }
-    property Size: TPoint2px read GetSize write SetSize;
+    property Size: TPoint2i read GetSize write SetSize;
 
     { Determines the pixel format in which to store bitmap's pixels. Changing this preserves image contents as much as
       possible. }
@@ -600,9 +600,9 @@ begin
   Result := FCanvas;
 end;
 
-function TBitmap.GetSize: TPoint2px;
+function TBitmap.GetSize: TPoint2i;
 begin
-  Result := Point2px(FWidth, FHeight);
+  Result := Point2i(FWidth, FHeight);
 end;
 
 procedure TBitmap.SetPixelFormat(const Value: TPixelFormat);
@@ -658,7 +658,7 @@ begin
       if (NewWidth > FWidth) or (NewHeight > FHeight) then
         NewSurface.Clear;
 
-      NewSurface.CopyRect(ZeroPoint2px, FSurface, ZeroIntRect);
+      NewSurface.CopyRect(ZeroPoint2i, FSurface, ZeroIntRect);
     except
       on E: Exception do
         begin
@@ -874,7 +874,7 @@ begin
   end;
 end;
 
-procedure TBitmap.SetSize(const NewSize: TPoint2px);
+procedure TBitmap.SetSize(const NewSize: TPoint2i);
 begin
   SetSize(NewSize.X, NewSize.Y);
 end;

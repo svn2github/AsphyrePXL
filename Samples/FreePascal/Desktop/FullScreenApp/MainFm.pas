@@ -1,16 +1,16 @@
 unit MainFm;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 uses
@@ -37,8 +37,8 @@ type
     procedure RenderSecondary;
   public
     { public declarations }
-    PrimarySize: TPoint2px;
-    SecondarySize: TPoint2px;
+    PrimarySize: TPoint2i;
+    SecondarySize: TPoint2i;
 
     DeviceProvider: TGraphicsDeviceProvider;
 
@@ -68,7 +68,7 @@ begin
   DeviceProvider := CreateDefaultProvider;
   EngineDevice := DeviceProvider.CreateDevice as TCustomSwapChainDevice;
 
-  PrimarySize := Point2px(ClientWidth, ClientHeight);
+  PrimarySize := Point2i(ClientWidth, ClientHeight);
 
   EngineDevice.SwapChains.Add(Handle, PrimarySize);
 
@@ -149,7 +149,7 @@ end;
 
 procedure TMainForm.FormResize(Sender: TObject);
 begin
-  PrimarySize := Point2px(ClientWidth, ClientHeight);
+  PrimarySize := Point2i(ClientWidth, ClientHeight);
 
   if (EngineDevice <> nil) and (EngineTimer <> nil) and EngineDevice.Initialized then
   begin
@@ -214,32 +214,32 @@ end;
 procedure TMainForm.RenderPrimary;
 begin
   EngineFonts[FontBookAntiqua].DrawText(
-    Point2(4.0, 4.0),
+    Point2f(4.0, 4.0),
     'This text should appear on first monitor.',
-    IntColor2($FFE8F9FF, $FFAEE2FF));
+    ColorPair($FFE8F9FF, $FFAEE2FF));
 
   EngineFonts[FontBookAntiqua].DrawText(
-    Point2(4.0, 44.0),
+    Point2f(4.0, 44.0),
     'Frame Rate: ' + IntToStr(EngineTimer.FrameRate),
-    IntColor2($FFEED1FF, $FFA1A0FF));
+    ColorPair($FFEED1FF, $FFA1A0FF));
 
   EngineFonts[FontBookAntiqua].DrawText(
-    Point2(4.0, 84.0),
+    Point2f(4.0, 84.0),
     'Technology: ' + GetFullDeviceTechString(EngineDevice),
-    IntColor2($FFE8FFAA, $FF12C312));
+    ColorPair($FFE8FFAA, $FF12C312));
 end;
 
 procedure TMainForm.RenderSecondary;
 begin
   EngineFonts[FontBookAntiqua].DrawText(
-    Point2(4.0, 4.0),
+    Point2f(4.0, 4.0),
     'This text should appear on second monitor.',
-    IntColor2($FFFFD27B, $FFFF0000));
+    ColorPair($FFFFD27B, $FFFF0000));
 
   EngineFonts[FontBookAntiqua].DrawText(
-    Point2(4.0, 44.0),
+    Point2f(4.0, 44.0),
     'FPS: ' + IntToStr(EngineTimer.FrameRate),
-    IntColor2($FFE4FFA5, $FF00E000));
+    ColorPair($FFE4FFA5, $FF00E000));
 end;
 
 procedure TMainForm.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);

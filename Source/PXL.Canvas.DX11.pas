@@ -1,16 +1,16 @@
 unit PXL.Canvas.DX11;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -75,7 +75,7 @@ type
 
     FPaletteTexture: TCustomLockableTexture;
 
-    FNormalSize: TPoint2;
+    FNormalSize: TPoint2f;
     FScissorRect: TIntRect;
     FViewport: D3D11_VIEWPORT;
 
@@ -125,7 +125,7 @@ type
       Indices: Integer; const BlendingEffect: TBlendingEffect; const Texture: TCustomBaseTexture): Boolean;
 
     function NextVertexEntry: Pointer;
-    procedure AddVertexEntry(const Position, TexCoord: TPoint2; const Color: Cardinal);
+    procedure AddVertexEntry(const Position, TexCoord: TPoint2f; const Color: Cardinal);
     procedure AddIndexEntry(const Index: Integer);
   protected
     function InitCanvas: Boolean; override;
@@ -143,14 +143,14 @@ type
   public
     destructor Destroy; override;
 
-    procedure PutPixel(const Point: TPoint2; const Color: TIntColor); override;
-    procedure Line(const SrcPoint, DestPoint: TPoint2; const Color: TIntColor2); override;
+    procedure PutPixel(const Point: TPoint2f; const Color: TIntColor); override;
+    procedure Line(const SrcPoint, DestPoint: TPoint2f; const Color: TColorPair); override;
 
-    procedure DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+    procedure DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
       const VertexCount, TriangleCount: Integer;
       const BlendingEffect: TBlendingEffect = TBlendingEffect.Normal); override;
 
-    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+    procedure DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
       const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
       const BlendingEffect: TBlendingEffect = TBlendingEffect.Normal); override;
 
@@ -728,7 +728,7 @@ begin
     FNormalSize.Y := FViewport.Height * 0.5;
   end
   else
-    FNormalSize := UnityPoint2;
+    FNormalSize := UnityPoint2f;
 
   ResetRasterState;
   ResetDepthStencilState;
@@ -1097,7 +1097,7 @@ begin
   Inc(FCurrentIndexCount);
 end;
 
-procedure TDX11Canvas.AddVertexEntry(const Position, TexCoord: TPoint2; const Color: Cardinal);
+procedure TDX11Canvas.AddVertexEntry(const Position, TexCoord: TPoint2f; const Color: Cardinal);
 var
   Entry: PVertexEntry;
 begin
@@ -1111,26 +1111,26 @@ begin
   Inc(FCurrentVertexCount);
 end;
 
-procedure TDX11Canvas.PutPixel(const Point: TPoint2; const Color: TIntColor);
+procedure TDX11Canvas.PutPixel(const Point: TPoint2f; const Color: TIntColor);
 begin
   RequestCache(TTopology.Points, TProgram.Solid, 1, 0, TBlendingEffect.Normal, nil);
 
-  AddVertexEntry(Point + Point2(0.5, 0.5), ZeroPoint2, Color);
+  AddVertexEntry(Point + Point2f(0.5, 0.5), ZeroPoint2f, Color);
 end;
 
-procedure TDX11Canvas.Line(const SrcPoint, DestPoint: TPoint2; const Color: TIntColor2);
+procedure TDX11Canvas.Line(const SrcPoint, DestPoint: TPoint2f; const Color: TColorPair);
 begin
   RequestCache(TTopology.Lines, TProgram.Solid, 2, 0, TBlendingEffect.Normal, nil);
 
-  AddVertexEntry(SrcPoint + Point2(0.5, 0.5), ZeroPoint2, Color.First);
-  AddVertexEntry(DestPoint + Point2(0.5, 0.5), ZeroPoint2, Color.Second);
+  AddVertexEntry(SrcPoint + Point2f(0.5, 0.5), ZeroPoint2f, Color.First);
+  AddVertexEntry(DestPoint + Point2f(0.5, 0.5), ZeroPoint2f, Color.Second);
 end;
 
-procedure TDX11Canvas.DrawIndexedTriangles(const Vertices: PPoint2; const Colors: PIntColor; const Indices: PLongInt;
+procedure TDX11Canvas.DrawIndexedTriangles(const Vertices: PPoint2f; const Colors: PIntColor; const Indices: PLongInt;
   const VertexCount, TriangleCount: Integer; const BlendingEffect: TBlendingEffect);
 var
   Index: PLongInt;
-  Vertex: PPoint2;
+  Vertex: PPoint2f;
   Color: PIntColor;
   I: Integer;
 begin
@@ -1149,19 +1149,19 @@ begin
 
   for I := 0 to VertexCount - 1 do
   begin
-    AddVertexEntry(Vertex^, ZeroPoint2, Color^);
+    AddVertexEntry(Vertex^, ZeroPoint2f, Color^);
 
     Inc(Vertex);
     Inc(Color);
   end;
 end;
 
-procedure TDX11Canvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2;
+procedure TDX11Canvas.DrawTexturedTriangles(const Texture: TCustomBaseTexture; const Vertices, TexCoords: PPoint2f;
   const Colors: PIntColor; const Indices: PLongInt; const VertexCount, TriangleCount: Integer;
   const BlendingEffect: TBlendingEffect);
 var
   Index: PLongInt;
-  Vertex, TexCoord: PPoint2;
+  Vertex, TexCoord: PPoint2f;
   Color: PIntColor;
   I: Integer;
 begin

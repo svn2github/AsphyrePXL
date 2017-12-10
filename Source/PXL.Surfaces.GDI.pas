@@ -1,16 +1,16 @@
 unit PXL.Surfaces.GDI;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -45,9 +45,9 @@ type
   public
     function ApproximatePixelFormat(const NewPixelFormat: TPixelFormat): TPixelFormat; override;
 
-    procedure BitBlt(const DestHandle: HDC; const DestAt, Size: TPoint2px; const SrcAt: TPoint2px); overload;
-    procedure BitBlt(const DestSurface: TGDIPixelSurface; const DestAt, Size: TPoint2px;
-      const SrcAt: TPoint2px); overload; inline;
+    procedure BitBlt(const DestHandle: HDC; const DestAt, Size: TPoint2i; const SrcAt: TPoint2i); overload;
+    procedure BitBlt(const DestSurface: TGDIPixelSurface; const DestAt, Size: TPoint2i;
+      const SrcAt: TPoint2i); overload; inline;
 
     property BitmapInfo: TGDIBitmapInfo read FBitmapInfo;
     property Bitmap: HBITMAP read FBitmap;
@@ -206,13 +206,13 @@ begin
   end;
 end;
 
-procedure TGDIPixelSurface.BitBlt(const DestHandle: HDC; const DestAt, Size, SrcAt: TPoint2px);
+procedure TGDIPixelSurface.BitBlt(const DestHandle: HDC; const DestAt, Size, SrcAt: TPoint2i);
 begin
   if (DestHandle <> 0) and (FHandle <> 0) then
     Windows.BitBlt(DestHandle, DestAt.X, DestAt.Y, Size.X, Size.Y, FHandle, SrcAt.X, SrcAt.Y, SRCCOPY);
 end;
 
-procedure TGDIPixelSurface.BitBlt(const DestSurface: TGDIPixelSurface; const DestAt, Size, SrcAt: TPoint2px);
+procedure TGDIPixelSurface.BitBlt(const DestSurface: TGDIPixelSurface; const DestAt, Size, SrcAt: TPoint2i);
 begin
   BitBlt(DestSurface.Handle, DestAt, Size, SrcAt);
 end;

@@ -1,16 +1,17 @@
 unit MainFm;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
+{< Atlas images that may contain one or more textures and multiple regions, optimized for rendering with the canvas. }
 interface
 
 uses
@@ -35,7 +36,7 @@ type
     EngineFonts: TBitmapFonts;
     EngineTimer: TMultimediaTimer;
 
-    DisplaySize: TPoint2px;
+    DisplaySize: TPoint2i;
     EngineTicks: Integer;
 
     ImageLenna: Integer;
@@ -69,7 +70,7 @@ begin
   DeviceProvider := CreateDefaultProvider(ImageFormatManager);
   EngineDevice := DeviceProvider.CreateDevice as TCustomSwapChainDevice;
 
-  DisplaySize := Point2px(ClientWidth, ClientHeight);
+  DisplaySize := Point2i(ClientWidth, ClientHeight);
   EngineDevice.SwapChains.Add(Handle, DisplaySize);
 
   if not EngineDevice.Initialize then
@@ -131,7 +132,7 @@ end;
 
 procedure TMainForm.FormResize(Sender: TObject);
 begin
-  DisplaySize := Point2px(ClientWidth, ClientHeight);
+  DisplaySize := Point2i(ClientWidth, ClientHeight);
 
   if (EngineDevice <> nil) and (EngineTimer <> nil) and EngineDevice.Initialized then
   begin
@@ -186,37 +187,37 @@ begin
   for J := 0 to DisplaySize.Y div 40 do
     for I := 0 to DisplaySize.X div 40 do
       EngineCanvas.FillQuad(
-        FloatRect4(I * 40, J * 40, 40, 40),
-        IntColor4($FF585858, $FF505050, $FF484848, $FF404040));
+        Quad(I * 40, J * 40, 40, 40),
+        ColorRect($FF585858, $FF505050, $FF484848, $FF404040));
 
   for I := 0 to DisplaySize.X div 40 do
     EngineCanvas.Line(
-      Point2(I * 40.0, 0.0),
-      Point2(I * 40.0, DisplaySize.Y),
+      Point2f(I * 40.0, 0.0),
+      Point2f(I * 40.0, DisplaySize.Y),
       $FF555555);
 
   for J := 0 to DisplaySize.Y div 40 do
     EngineCanvas.Line(
-      Point2(0.0, J * 40.0),
-      Point2(DisplaySize.X, J * 40.0),
+      Point2f(0.0, J * 40.0),
+      Point2f(DisplaySize.X, J * 40.0),
       $FF555555);
 
   // Draw an animated hole.
   EngineCanvas.QuadHole(
-    Point2(0.0, 0.0),
+    Point2f(0.0, 0.0),
     DisplaySize,
-    Point2(
+    Point2f(
       DisplaySize.X * 0.5 + Cos(EngineTicks * 0.0073) * DisplaySize.X * 0.25,
       DisplaySize.Y * 0.5 + Sin(EngineTicks * 0.00312) * DisplaySize.Y * 0.25),
-    Point2(80.0, 100.0),
+    Point2f(80.0, 100.0),
     $20FFFFFF, $80955BFF, 16);
 
   // Draw the image of famous Lenna.
   EngineCanvas.UseImage(EngineImages[ImageLenna]);
-  EngineCanvas.TexQuad(FloatRect4RC(
-    // TPoint2(DisplaySize) * 0.5  -  Internal Error in FPC
-    Point2(DisplaySize.X * 0.5, DisplaySize.Y * 0.5),
-    Point2(300.0, 300.0),
+  EngineCanvas.TexQuad(TQuad.Rotated(
+    // TPoint2f(DisplaySize) * 0.5  -  Internal Error in FPC
+    Point2f(DisplaySize.X * 0.5, DisplaySize.Y * 0.5),
+    Point2f(300.0, 300.0),
     EngineTicks * 0.01),
     IntColorAlpha(128));
 
@@ -225,31 +226,31 @@ begin
   Kappa := 1.25 * Pi + Sin(EngineTicks * 0.01854) * 0.5 * Pi;
 
   EngineCanvas.FillArc(
-    Point2(DisplaySize.X * 0.1, DisplaySize.Y * 0.9),
-    Point2(75.0, 50.0),
+    Point2f(DisplaySize.X * 0.1, DisplaySize.Y * 0.9),
+    Point2f(75.0, 50.0),
     Omega, Omega + Kappa, 32,
-    IntColor4($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
+    ColorRect($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
 
   // Draw an animated Ribbon.
   Omega := EngineTicks * 0.02231;
   Kappa := 1.25 * Pi + Sin(EngineTicks * 0.024751) * 0.5 * Pi;
 
   EngineCanvas.FillRibbon(
-    Point2(DisplaySize.X * 0.9, DisplaySize.Y * 0.85),
-    Point2(25.0, 20.0),
-    Point2(70.0, 80.0),
+    Point2f(DisplaySize.X * 0.9, DisplaySize.Y * 0.85),
+    Point2f(25.0, 20.0),
+    Point2f(70.0, 80.0),
     Omega, Omega + Kappa, 32,
-    IntColor4($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
+    ColorRect($FFFF0000, $FF00FF00, $FF0000FF, $FFFFFFFF));
 
   EngineFonts[FontTahoma].DrawText(
-    Point2(4.0, 4.0),
+    Point2f(4.0, 4.0),
     'FPS: ' + IntToStr(EngineTimer.FrameRate),
-    IntColor2($FFFFE887, $FFFF0000));
+    ColorPair($FFFFE887, $FFFF0000));
 
   EngineFonts[FontTahoma].DrawText(
-    Point2(4.0, 24.0),
+    Point2f(4.0, 24.0),
     'Technology: ' + GetFullDeviceTechString(EngineDevice),
-    IntColor2($FFE8FFAA, $FF12C312));
+    ColorPair($FFE8FFAA, $FF12C312));
 end;
 
 end.

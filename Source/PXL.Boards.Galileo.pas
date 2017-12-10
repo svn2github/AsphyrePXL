@@ -1,16 +1,16 @@
 unit PXL.Boards.Galileo;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 
 {
   Acknowledgments:
@@ -52,11 +52,13 @@ interface
 {$DEFINE GalileoAutoFastIO}
 
 uses
-  PXL.TypeDef, PXL.Boards.Types, PXL.Sysfs.Types, PXL.Sysfs.GPIO, PXL.Sysfs.PWM, PXL.Sysfs.ADC, PXL.Sysfs.SPI,
-  PXL.Sysfs.I2C, PXL.Sysfs.UART;
+  PXL.TypeDef, PXL.Boards.Types, PXL.Sysfs.Types, PXL.Sysfs.Core, PXL.Sysfs.GPIO, PXL.Sysfs.PWM, PXL.Sysfs.ADC,
+  PXL.Sysfs.SPI, PXL.Sysfs.I2C, PXL.Sysfs.UART;
 
 type
   TGalileoBoard = (Gen1, Gen2, Edison, Other);
+
+  TGalileoSystemCore = TSysfsSystemCore;
 
   TGalileoGPIO = class(TCustomGPIO)
   protected type
@@ -140,16 +142,17 @@ type
     function GetFastIO: TFastIO;
     function PinToGPIO(const Pin: Integer): Integer; inline;
     function GetInternalLEDPin: Integer; inline;
-    function GetPinDrive(const Pin: Integer): TPinDrive;
-    procedure SetPinDrive(const Pin: Integer; const Value: TPinDrive);
   protected
     FBoardInfo: TBoardInfo;
 
-    function GetPinMode(const Pin: Integer): TPinMode; override;
-    procedure SetPinMode(const Pin: Integer; const Mode: TPinMode); override;
+    function GetPinMode(const Pin: TPinIdentifier): TPinMode; override;
+    procedure SetPinMode(const Pin: TPinIdentifier; const Mode: TPinMode); override;
 
-    function GetPinValue(const Pin: Integer): TPinValue; override;
-    procedure SetPinValue(const Pin: Integer; const Value: TPinValue); override;
+    function GetPinValue(const Pin: TPinIdentifier): TPinValue; override;
+    procedure SetPinValue(const Pin: TPinIdentifier; const Value: TPinValue); override;
+
+    function GetPinDrive(const Pin: TPinIdentifier): TPinDrive; override;
+    procedure SetPinDrive(const Pin: TPinIdentifier; const Value: TPinDrive); override;
 
     class procedure InitGalileo1Info(out Info: TBoardInfo);
     class procedure InitGalileo2Info(out Info: TBoardInfo);
@@ -160,14 +163,12 @@ type
     constructor Create;
     destructor Destroy; override;
 
-    procedure SetFastOutput(const Pin: Integer);
-    procedure SetFastValue(const Pin: Integer; const Value: TPinValue);
+    procedure SetFastOutput(const Pin: TPinIdentifier);
+    procedure SetFastValue(const Pin: TPinIdentifier; const Value: TPinValue);
 
     property Board: TGalileoBoard read FBoard;
     property SysfsGPIO: TSysfsGPIO read FSysfsGPIO;
     property InternalLEDPin: Integer read GetInternalLEDPin;
-
-    property PinDrive[const Pin: Integer]: TPinDrive read GetPinDrive write SetPinDrive;
   end;
 
   TGalileoPWM = class(TCustomPWM)
@@ -175,14 +176,14 @@ type
     FGPIO: TGalileoGPIO;
     FSysfsPWM: TSysfsPWM;
 
-    function PinToPWM(const Pin: Integer): Integer; inline;
+    function PinToPWM(const Pin: TPinIdentifier): TPinIdentifier; inline;
   protected
-    function GetEnabled(const Pin: Integer): Boolean; override;
-    procedure SetEnabled(const Pin: Integer; const Value: Boolean); override;
-    function GetPeriod(const Pin: Integer): Integer; override;
-    procedure SetPeriod(const Pin, Value: Integer); override;
-    function GetDutyCycle(const Pin: Integer): Integer; override;
-    procedure SetDutyCycle(const Pin, Value: Integer); override;
+    function GetEnabled(const Channel: TPinChannel): Boolean; override;
+    procedure SetEnabled(const Channel: TPinChannel; const Value: Boolean); override;
+    function GetPeriod(const Channel: TPinChannel): Cardinal; override;
+    procedure SetPeriod(const Channel: TPinChannel; const Value: Cardinal); override;
+    function GetDutyCycle(const Channel: TPinChannel): Cardinal; override;
+    procedure SetDutyCycle(const Channel: TPinChannel; const Value: Cardinal); override;
   public
     constructor Create(const AGPIO: TGalileoGPIO);
     destructor Destroy; override;
@@ -196,7 +197,7 @@ type
     FGPIO: TGalileoGPIO;
     FSysfsADC: TSysfsADC;
   protected
-    function GetRawValue(const Channel: Integer): Integer; override;
+    function GetRawValue(const Channel: TPinChannel): Cardinal; override;
   public
     constructor Create(const AGPIO: TGalileoGPIO);
     destructor Destroy; override;
@@ -228,7 +229,7 @@ type
   private
     FGPIO: TGalileoGPIO;
   public
-    constructor Create(const AGPIO: TGalileoGPIO);
+    constructor Create(const ASystemCore: TGalileoSystemCore; const AGPIO: TGalileoGPIO);
 
     property GPIO: TGalileoGPIO read FGPIO;
   end;
@@ -398,9 +399,9 @@ begin
   Result := FBoardInfo.InternalLED;
 end;
 
-function TGalileoGPIO.GetPinMode(const Pin: Integer): TPinMode;
+function TGalileoGPIO.GetPinMode(const Pin: TPinIdentifier): TPinMode;
 begin
-  if (Pin < 0) or (Pin > Length(FPinModes)) then
+  if Pin > Cardinal(Length(FPinModes)) then
     raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
 
   if FPinModes[Pin] <> TPinOpMode.GPIO then
@@ -409,9 +410,9 @@ begin
   Result := FSysfsGPIO.PinMode[PinToGPIO(Pin)];
 end;
 
-procedure TGalileoGPIO.SetPinMode(const Pin: Integer; const Mode: TPinMode);
+procedure TGalileoGPIO.SetPinMode(const Pin: TPinIdentifier; const Mode: TPinMode);
 begin
-  if (Pin < 0) or (Pin > Length(FPinModes)) then
+  if Pin > Cardinal(Length(FPinModes)) then
     raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
 
   if FPinModes[Pin] <> TPinOpMode.GPIO then
@@ -441,9 +442,9 @@ begin
 {$ENDIF}
 end;
 
-function TGalileoGPIO.GetPinValue(const Pin: Integer): TPinValue;
+function TGalileoGPIO.GetPinValue(const Pin: TPinIdentifier): TPinValue;
 begin
-  if (Pin < 0) or (Pin > Length(FPinModes)) then
+  if Pin > Cardinal(Length(FPinModes)) then
     raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
 
   if FPinModes[Pin] <> TPinOpMode.GPIO then
@@ -452,9 +453,9 @@ begin
   Result := FSysfsGPIO.PinValue[PinToGPIO(Pin)];
 end;
 
-procedure TGalileoGPIO.SetPinValue(const Pin: Integer; const Value: TPinValue);
+procedure TGalileoGPIO.SetPinValue(const Pin: TPinIdentifier; const Value: TPinValue);
 begin
-  if (Pin < 0) or (Pin > Length(FPinModes)) then
+  if Pin > Cardinal(Length(FPinModes)) then
     raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
 
   if FPinModes[Pin] = TPinOpMode.FastIO then
@@ -465,31 +466,31 @@ begin
     raise EPinNotConfiguredGPIO.Create(Format(SPinNotConfiguredGPIO, [Pin]));
 end;
 
-function TGalileoGPIO.GetPinDrive(const Pin: Integer): TPinDrive;
+function TGalileoGPIO.GetPinDrive(const Pin: TPinIdentifier): TPinDrive;
 begin
-  if (Pin < 0) or (Pin > Length(FPinModes)) then
+  if Pin > Cardinal(Length(FPinModes)) then
     raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
 
   if FPinModes[Pin] <> TPinOpMode.GPIO then
     raise EPinNotConfiguredGPIO.Create(Format(SPinNotConfiguredGPIO, [Pin]));
 
-  Result := FSysfsGPIO.PinDrive[PinToGPIO(Pin)];
+  Result := TCustomGPIO(FSysfsGPIO).PinDrive[PinToGPIO(Pin)];
 end;
 
-procedure TGalileoGPIO.SetPinDrive(const Pin: Integer; const Value: TPinDrive);
+procedure TGalileoGPIO.SetPinDrive(const Pin: TPinIdentifier; const Value: TPinDrive);
 begin
-  if (Pin < 0) or (Pin > Length(FPinModes)) then
+  if Pin > Cardinal(Length(FPinModes)) then
     raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
 
   if FPinModes[Pin] <> TPinOpMode.GPIO then
     raise EPinNotConfiguredGPIO.Create(Format(SPinNotConfiguredGPIO, [Pin]));
 
-  FSysfsGPIO.PinDrive[PinToGPIO(Pin)] := Value;
+  TCustomGPIO(FSysfsGPIO).PinDrive[PinToGPIO(Pin)] := Value;
 end;
 
-procedure TGalileoGPIO.SetFastOutput(const Pin: Integer);
+procedure TGalileoGPIO.SetFastOutput(const Pin: TPinIdentifier);
 begin
-  if (Pin < 0) or (Pin > Length(FPinModes)) then
+  if Pin > Cardinal(Length(FPinModes)) then
     raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
 
   if not (TPinOpMode.FastIO in FBoardInfo.Entries[Pin].Modes) then
@@ -505,7 +506,7 @@ begin
     FFastIO := TFastIO.Create(FBoardInfo.FastIO.Path);
 end;
 
-procedure TGalileoGPIO.SetFastValue(const Pin: Integer; const Value: TPinValue);
+procedure TGalileoGPIO.SetFastValue(const Pin: TPinIdentifier; const Value: TPinValue);
 begin
   if Value = TPinValue.High then
     PLongWord(FFastIO.Memory)^ := PLongWord(FFastIO.Memory)^ or
@@ -2260,107 +2261,107 @@ begin
   inherited;
 end;
 
-function TGalileoPWM.PinToPWM(const Pin: Integer): Integer;
+function TGalileoPWM.PinToPWM(const Pin: TPinIdentifier): TPinIdentifier;
 begin
   Result := FGPIO.FBoardInfo.Entries[Pin].PWM.Pin;
 end;
 
-function TGalileoPWM.GetEnabled(const Pin: Integer): Boolean;
+function TGalileoPWM.GetEnabled(const Channel: TPinChannel): Boolean;
 begin
   with FGPIO do
   begin
-    if (Pin < 0) or (Pin > Length(FPinModes)) then
-      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
+    if Channel > Cardinal(Length(FPinModes)) then
+      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Channel]));
 
-    if FPinModes[Pin] <> TPinOpMode.PWM then
-      raise EPinNotConfiguredPWM.Create(Format(SPinNotConfiguredPWM, [Pin]));
+    if FPinModes[Channel] <> TPinOpMode.PWM then
+      raise EPinNotConfiguredPWM.Create(Format(SPinNotConfiguredPWM, [Channel]));
 
-    Result := FSysfsPWM.Enabled[PinToPWM(Pin)];
+    Result := FSysfsPWM.Enabled[PinToPWM(Channel)];
   end;
 end;
 
-procedure TGalileoPWM.SetEnabled(const Pin: Integer; const Value: Boolean);
+procedure TGalileoPWM.SetEnabled(const Channel: TPinChannel; const Value: Boolean);
 begin
   with FGPIO do
   begin
-    if (Pin < 0) or (Pin > Length(FPinModes)) then
-      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
+    if Channel > Cardinal(Length(FPinModes)) then
+      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Channel]));
 
-    if FPinModes[Pin] <> TPinOpMode.PWM then
+    if FPinModes[Channel] <> TPinOpMode.PWM then
     begin
-      SetupMuxes(FBoardInfo.Entries[Pin].PWM.Muxes);
-      FPinModes[Pin] := TPinOpMode.PWM;
+      SetupMuxes(FBoardInfo.Entries[Channel].PWM.Muxes);
+      FPinModes[Channel] := TPinOpMode.PWM;
     end;
 
     if not Value then
-      FGPIO.FSysfsGPIO.SetMux(FBoardInfo.Entries[Pin].GPIO.Pin, TPinValue.Low);
+      FGPIO.FSysfsGPIO.SetMux(FBoardInfo.Entries[Channel].GPIO.Pin, TPinValue.Low);
 
-    FSysfsPWM.Enabled[PinToPWM(Pin)] := Value;
+    FSysfsPWM.Enabled[PinToPWM(Channel)] := Value;
 
     if Value then
-      FGPIO.FSysfsGPIO.SetMux(FBoardInfo.Entries[Pin].GPIO.Pin, TPinValue.High);
+      FGPIO.FSysfsGPIO.SetMux(FBoardInfo.Entries[Channel].GPIO.Pin, TPinValue.High);
   end;
 end;
 
-function TGalileoPWM.GetPeriod(const Pin: Integer): Integer;
+function TGalileoPWM.GetPeriod(const Channel: TPinChannel): Cardinal;
 begin
   with FGPIO do
   begin
-    if (Pin < 0) or (Pin > Length(FPinModes)) then
-      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
+    if Channel > Cardinal(Length(FPinModes)) then
+      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Channel]));
 
-    if FPinModes[Pin] <> TPinOpMode.PWM then
-      raise EPinNotConfiguredPWM.Create(Format(SPinNotConfiguredPWM, [Pin]));
+    if FPinModes[Channel] <> TPinOpMode.PWM then
+      raise EPinNotConfiguredPWM.Create(Format(SPinNotConfiguredPWM, [Channel]));
 
-    Result := FSysfsPWM.Period[PinToPWM(Pin)];
+    Result := FSysfsPWM.Period[PinToPWM(Channel)];
   end;
 end;
 
-procedure TGalileoPWM.SetPeriod(const Pin, Value: Integer);
+procedure TGalileoPWM.SetPeriod(const Channel: TPinChannel; const Value: Cardinal);
 begin
   with FGPIO do
   begin
-    if (Pin < 0) or (Pin > Length(FPinModes)) then
-      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
+    if Channel > Cardinal(Length(FPinModes)) then
+      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Channel]));
 
-    if FPinModes[Pin] <> TPinOpMode.PWM then
+    if FPinModes[Channel] <> TPinOpMode.PWM then
     begin
-      SetupMuxes(FBoardInfo.Entries[Pin].PWM.Muxes);
-      FPinModes[Pin] := TPinOpMode.PWM;
+      SetupMuxes(FBoardInfo.Entries[Channel].PWM.Muxes);
+      FPinModes[Channel] := TPinOpMode.PWM;
     end;
 
-    FSysfsPWM.Period[PinToPWM(Pin)] := Value;
+    FSysfsPWM.Period[PinToPWM(Channel)] := Value;
   end;
 end;
 
-function TGalileoPWM.GetDutyCycle(const Pin: Integer): Integer;
+function TGalileoPWM.GetDutyCycle(const Channel: TPinChannel): Cardinal;
 begin
   with FGPIO do
   begin
-    if (Pin < 0) or (Pin > Length(FPinModes)) then
-      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
+    if Channel > Cardinal(Length(FPinModes)) then
+      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Channel]));
 
-    if FPinModes[Pin] <> TPinOpMode.PWM then
-      raise EPinNotConfiguredPWM.Create(Format(SPinNotConfiguredPWM, [Pin]));
+    if FPinModes[Channel] <> TPinOpMode.PWM then
+      raise EPinNotConfiguredPWM.Create(Format(SPinNotConfiguredPWM, [Channel]));
 
-    Result := FSysfsPWM.DutyCycle[PinToPWM(Pin)];
+    Result := FSysfsPWM.DutyCycle[PinToPWM(Channel)];
   end;
 end;
 
-procedure TGalileoPWM.SetDutyCycle(const Pin, Value: Integer);
+procedure TGalileoPWM.SetDutyCycle(const Channel: TPinChannel; const Value: Cardinal);
 begin
   with FGPIO do
   begin
-    if (Pin < 0) or (Pin > Length(FPinModes)) then
-      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Pin]));
+    if Channel > Cardinal(Length(FPinModes)) then
+      raise EGPIOInvalidPin.Create(Format(SGPIOSpecifiedPinInvalid, [Channel]));
 
-    if FPinModes[Pin] <> TPinOpMode.PWM then
+    if FPinModes[Channel] <> TPinOpMode.PWM then
     begin
-      SetupMuxes(FBoardInfo.Entries[Pin].PWM.Muxes);
-      FPinModes[Pin] := TPinOpMode.PWM;
+      SetupMuxes(FBoardInfo.Entries[Channel].PWM.Muxes);
+      FPinModes[Channel] := TPinOpMode.PWM;
     end;
 
-    FSysfsPWM.DutyCycle[PinToPWM(Pin)] := Value;
+    FSysfsPWM.DutyCycle[PinToPWM(Channel)] := Value;
   end;
 end;
 
@@ -2384,13 +2385,13 @@ begin
   inherited;
 end;
 
-function TGalileoADC.GetRawValue(const Channel: Integer): Integer;
+function TGalileoADC.GetRawValue(const Channel: TPinChannel): Cardinal;
 var
   Pin: Integer;
 begin
   with FGPIO do
   begin
-    if (Channel < 0) or (Channel > Length(FBoardInfo.PWM.Pins)) then
+    if Channel > Cardinal(Length(FBoardInfo.PWM.Pins)) then
       raise EADCInvalidChannel.Create(Format(SADCSpecifiedChannelInvalid, [Channel]));
 
     Pin := FBoardInfo.ADC.Pins[Channel];
@@ -2452,7 +2453,7 @@ end;
 {$ENDREGION}
 {$REGION 'TGalileoUART'}
 
-constructor TGalileoUART.Create(const AGPIO: TGalileoGPIO);
+constructor TGalileoUART.Create(const ASystemCore: TGalileoSystemCore; const AGPIO: TGalileoGPIO);
 var
   I, Pin: Integer;
 begin
@@ -2468,7 +2469,7 @@ begin
         SetupMuxes(FBoardInfo.Entries[Pin].UART.Muxes);
     end;
 
-  inherited Create(FGPIO.FBoardInfo.UART.Path);
+  inherited Create(ASystemCore, FGPIO.FBoardInfo.UART.Path);
 end;
 
 {$ENDREGION}

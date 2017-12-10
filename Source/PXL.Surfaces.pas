@@ -1,16 +1,16 @@
 unit PXL.Surfaces;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {< Surfaces that provide cross-platform means of storing, converting and processing pixels.  }
 interface
 
@@ -45,7 +45,7 @@ type
 
     { Draws a single pixel at specified position and color with alpha-blending. It also does a sanity check for
       specified position and if it is outside of valid range, does nothing. }
-    procedure DrawPixel(const Position: TPoint2px; const Color: TIntColor); overload; inline;
+    procedure DrawPixel(const Position: TPoint2i; const Color: TIntColor); overload; inline;
 
     { Draws a single pixel at specified coordinates similarly to @link(DrawPixel), but without sanity check for
       increased performance. }
@@ -53,7 +53,7 @@ type
 
     { Draws a single pixel at specified position similarly to @link(DrawPixel), but without sanity check for
       increased performance. }
-    procedure DrawPixelUnsafe(const Position: TPoint2px; const Color: TIntColor); overload; inline;
+    procedure DrawPixelUnsafe(const Position: TPoint2i; const Color: TIntColor); overload; inline;
 
     { Provides access to surface's individual pixels. See @link(GetPixel) and @link(SetPixel) on how this actually
       works. }
@@ -72,7 +72,7 @@ type
     FName: StdString;
     FPremultipliedAlpha: Boolean;
 
-    function GetSize: TPoint2px;
+    function GetSize: TPoint2i;
 
     function GetScanlineAddress(const Index: Integer): Pointer; inline;
     function GetPixelAddress(const X, Y: Integer): Pointer; inline;
@@ -151,7 +151,7 @@ type
     { Redefines surface size to the specified size and pixel format, discarding previous contents.
       This function provide sanity check on specified parameters and calls @link(Reallocate) accordingly.
       @True is returned when the operation has been successful and @False otherwise. }
-    function SetSize(const NewSize: TPoint2px;
+    function SetSize(const NewSize: TPoint2i;
       const NewPixelFormat: TPixelFormat = TPixelFormat.Unknown): Boolean; overload; inline;
 
     { Takes the provided pixel format and returns one of pixel formats currently supported, which is a closest match
@@ -174,17 +174,17 @@ type
       If source rectangle is empty, then the entire source surface will be copied. This function does the appropriate
       clipping and pixel format conversion. It does not change current surface size or pixel format. @True is returned
       when the operation was successful and @False otherwise. }
-    function CopyRect(DestPos: TPoint2px; const Source: TPixelSurface; SourceRect: TIntRect): Boolean;
+    function CopyRect(DestPos: TPoint2i; const Source: TPixelSurface; SourceRect: TIntRect): Boolean;
 
     { Renders a portion of source surface onto this one at the specified origin, using alpha-blending and
       premultiplying pixels taken from the source surface with specified color gradient. This does pixel pixel
       conversion and clipping as necessary.  }
-    procedure DrawSurface(DestPos: TPoint2px; const Source: TPixelSurface; SourceRect: TIntRect;
-      const Colors: TIntColor4);
+    procedure DrawSurface(DestPos: TPoint2i; const Source: TPixelSurface; SourceRect: TIntRect;
+      const Colors: TColorRect);
 
     { Draws a rectangle filled with specified gradient onto this surface with alpha-blending. For filling areas with
       the same color without alpha-blending, a better performance can be achieved with @link(FillRect). }
-    procedure DrawFilledRect(DestRect: TIntRect; const Colors: TIntColor4);
+    procedure DrawFilledRect(DestRect: TIntRect; const Colors: TColorRect);
 
     { Draws a single pixel on this surface with alpha-blending. }
     procedure DrawPixel(const X, Y: Integer; const Color: TIntColor); override;
@@ -307,7 +307,7 @@ type
     property Height: Integer read FHeight;
 
     { Size of surface in pixels. }
-    property Size: TPoint2px read GetSize;
+    property Size: TPoint2i read GetSize;
 
     { Pixel format in which individual pixels are stored. }
     property PixelFormat: TPixelFormat read FPixelFormat;
@@ -426,7 +426,7 @@ begin
   SetPixel(X, Y, BlendPixels(GetPixel(X, Y), Color, TIntColorRec(Color).Alpha));
 end;
 
-procedure TConceptualPixelSurface.DrawPixel(const Position: TPoint2px;
+procedure TConceptualPixelSurface.DrawPixel(const Position: TPoint2i;
   const Color: TIntColor);
 begin
   DrawPixel(Position.X, Position.Y, Color);
@@ -437,7 +437,7 @@ begin
   SetPixelUnsafe(X, Y, BlendPixels(GetPixelUnsafe(X, Y), Color, TIntColorRec(Color).Alpha));
 end;
 
-procedure TConceptualPixelSurface.DrawPixelUnsafe(const Position: TPoint2px; const Color: TIntColor);
+procedure TConceptualPixelSurface.DrawPixelUnsafe(const Position: TPoint2i; const Color: TIntColor);
 begin
   DrawPixelUnsafe(Position.X, Position.Y, Color);
 end;
@@ -469,9 +469,9 @@ begin
   inherited;
 end;
 
-function TPixelSurface.GetSize: TPoint2px;
+function TPixelSurface.GetSize: TPoint2i;
 begin
-  Result := Point2px(FWidth, FHeight);
+  Result := Point2i(FWidth, FHeight);
 end;
 
 function TPixelSurface.GetScanlineAddress(const Index: Integer): Pointer;
@@ -574,7 +574,7 @@ begin
     Result := True;
 end;
 
-function TPixelSurface.SetSize(const NewSize: TPoint2px; const NewPixelFormat: TPixelFormat): Boolean;
+function TPixelSurface.SetSize(const NewSize: TPoint2i; const NewPixelFormat: TPixelFormat): Boolean;
 begin
   Result := SetSize(NewSize.X, NewSize.Y, NewPixelFormat);
 end;
@@ -686,13 +686,13 @@ begin
       Move(Source.Scanline[I]^, GetScanline(I)^, FWidth * FBytesPerPixel);
   end
   else
-    CopyRect(ZeroPoint2px, Source, IntRect(0, 0, Source.Width, Source.Height));
+    CopyRect(ZeroPoint2i, Source, IntRect(0, 0, Source.Width, Source.Height));
 
   FPremultipliedAlpha := Source.PremultipliedAlpha;
   Result := True;
 end;
 
-function TPixelSurface.CopyRect(DestPos: TPoint2px; const Source: TPixelSurface; SourceRect: TIntRect): Boolean;
+function TPixelSurface.CopyRect(DestPos: TPoint2i; const Source: TPixelSurface; SourceRect: TIntRect): Boolean;
 var
   I: Integer;
   TempBits: Pointer;
@@ -702,9 +702,9 @@ begin
     Exit(False);
 
   if SourceRect.Empty then
-    SourceRect := IntRect(ZeroPoint2px, Source.Size);
+    SourceRect := IntRect(ZeroPoint2i, Source.Size);
 
-  if not ClipCoords(Source.Size, GetSize, SourceRect, DestPos) then
+  if not TIntRect.ClipCoords(Source.Size, GetSize, SourceRect, DestPos) then
     Exit(False);
 
   if FPixelFormat = Source.PixelFormat then
@@ -753,8 +753,8 @@ begin
   Result := True;
 end;
 
-procedure TPixelSurface.DrawSurface(DestPos: TPoint2px; const Source: TPixelSurface; SourceRect: TIntRect;
-  const Colors: TIntColor4);
+procedure TPixelSurface.DrawSurface(DestPos: TPoint2i; const Source: TPixelSurface; SourceRect: TIntRect;
+  const Colors: TColorRect);
 var
   I, J, X, Y, GradientVertDiv, GradientHorizDiv, Alpha: Integer;
   SourceColor, GradientLeft, GradientRight, GradientColor: TIntColor;
@@ -764,9 +764,9 @@ begin
     Exit;
 
   if SourceRect.Empty then
-    SourceRect := IntRect(ZeroPoint2px, Source.Size);
+    SourceRect := IntRect(ZeroPoint2i, Source.Size);
 
-  if not ClipCoords(Source.Size, GetSize, SourceRect, DestPos) then
+  if not TIntRect.ClipCoords(Source.Size, GetSize, SourceRect, DestPos) then
     Exit;
 
   GradientHorizDiv := Max(SourceRect.Width - 1, 1);
@@ -793,7 +793,7 @@ begin
   end;
 end;
 
-procedure TPixelSurface.DrawFilledRect(DestRect: TIntRect; const Colors: TIntColor4);
+procedure TPixelSurface.DrawFilledRect(DestRect: TIntRect; const Colors: TColorRect);
 var
   I, J, X, Y, GradientVertDiv, GradientHorizDiv, Alpha: Integer;
   GradientLeft, GradientRight, GradientColor: TIntColor;
@@ -1178,7 +1178,7 @@ end;
 function TPixelSurface.ShrinkToHalfFrom(const Source: TPixelSurface): Boolean;
 var
   I, J: Integer;
-  NewSize: TPoint2px;
+  NewSize: TPoint2i;
 begin
   NewSize.X := Max(Source.Width div 2, 1);
   NewSize.Y := Max(Source.Height div 2, 1);
@@ -1216,6 +1216,7 @@ function TPixelSurface.ComposeWhiteBlackToGrayAlpha(const SourceWhite, SourceBla
 var
   NewPixelFormat: TPixelFormat;
   SourceWhitePixel, SourceBlackPixel, DestPixel: Pointer;
+  Gray, Alpha: VectorFloat;
   I, J: Integer;
 begin
   if (SourceWhite.Width <= 0) or (SourceWhite.Height <= 0) or (SourceWhite.Width <> SourceBlack.Width) or
@@ -1240,13 +1241,9 @@ begin
 
     for I := 0 to FWidth - 1 do
     begin
-      Pixel32ToX(
-        IntGrayToColor(
-          FloatToIntGrayAlpha(
-            ExtractGrayAlpha(
-              PixelToGrayFloat(PixelXTo32(SourceBlackPixel, SourceBlack.PixelFormat)),
-              PixelToGrayFloat(PixelXTo32(SourceWhitePixel, SourceWhite.PixelFormat)), 0.0, 1.0))),
-        DestPixel, FPixelFormat);
+      ExtractGrayAlpha(PixelToGrayFloat(PixelXTo32(SourceBlackPixel, SourceBlack.PixelFormat)),
+        PixelToGrayFloat(PixelXTo32(SourceWhitePixel, SourceWhite.PixelFormat)), 0.0, 1.0, Alpha, Gray);
+      Pixel32ToX(IntColorGray(Gray, Alpha), DestPixel, FPixelFormat);
 
       Inc(PtrUInt(SourceWhitePixel), SourceWhite.BytesPerPixel);
       Inc(PtrUInt(SourceBlackPixel), SourceBlack.BytesPerPixel);
@@ -1299,7 +1296,7 @@ end;
 procedure TPixelSurface.StretchFrom(const Source: TPixelSurface; DestRect, SourceRect: TFloatRect);
 var
   I, J: Integer;
-  Position, Velocity: TPoint2px;
+  Position, Velocity: TPoint2i;
   IntSourceRect, IntDestRect: TIntRect;
 begin
   if IsEmpty then
@@ -1311,11 +1308,11 @@ begin
   if DestRect.Empty then
     DestRect := FloatRect(0, 0, FWidth, FHeight);
 
-  if not ClipCoords(Source.Size, GetSize, SourceRect, DestRect) then
+  if not TFloatRect.ClipCoords(Source.Size, GetSize, SourceRect, DestRect) then
     Exit;
 
-  IntSourceRect := SourceRect.ToIntRect;
-  IntDestRect := DestRect.ToIntRect;
+  IntSourceRect := SourceRect.ToInt;
+  IntDestRect := DestRect.ToInt;
 
   if (IntSourceRect.Width <= 0) or (IntSourceRect.Height <= 0) or (IntDestRect.Width <= 0) or
     (IntDestRect.Height <= 0) then
@@ -1345,7 +1342,7 @@ end;
 procedure TPixelSurface.StretchBilinearFrom(const Source: TPixelSurface; DestRect, SourceRect: TFloatRect);
 var
   I, J: Integer;
-  Position, Velocity: TPoint2px;
+  Position, Velocity: TPoint2i;
   IntSourceRect, IntDestRect: TIntRect;
 begin
   if IsEmpty then
@@ -1357,11 +1354,11 @@ begin
   if DestRect.Empty then
     DestRect := FloatRect(0, 0, FWidth, FHeight);
 
-  if not ClipCoords(Source.Size, GetSize, SourceRect, DestRect) then
+  if not TFloatRect.ClipCoords(Source.Size, GetSize, SourceRect, DestRect) then
     Exit;
 
-  IntSourceRect := SourceRect.ToIntRect;
-  IntDestRect := DestRect.ToIntRect;
+  IntSourceRect := SourceRect.ToInt;
+  IntDestRect := DestRect.ToInt;
 
   if (IntSourceRect.Width <= 0) or (IntSourceRect.Height <= 0) or (IntDestRect.Width <= 0) or
     (IntDestRect.Height <= 0) then

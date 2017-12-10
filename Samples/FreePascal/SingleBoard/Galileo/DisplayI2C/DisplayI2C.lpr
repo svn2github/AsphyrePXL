@@ -1,16 +1,16 @@
 program DisplayI2C;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {
   This example illustrates usage of I2C protocol and grayscale drawing on monochrome OLED display with SSD1306 driver.
 
@@ -41,7 +41,7 @@ type
     FDataPort: TCustomDataPort;
     FDisplay: TCustomDisplay;
 
-    FDisplaySize: TPoint2px;
+    FDisplaySize: TPoint2i;
 
     FFontSystem: Integer;
     FFontTahoma: Integer;
@@ -108,18 +108,18 @@ begin
     Kappa := 1.25 * Pi + Sin(Ticks * 0.024751) * 0.5 * Pi;
 
     FDisplay.Canvas.FillRibbon(
-      Point2(FDisplaySize.X * 0.8, FDisplaySize.Y * 0.5),
-      Point2(7.0, 3.0),
-      Point2(14.0, 16.0),
+      Point2f(FDisplaySize.X * 0.8, FDisplaySize.Y * 0.5),
+      Point2f(7.0, 3.0),
+      Point2f(14.0, 16.0),
       Omega, Omega + Kappa, 16,
-      IntColor4($FF000000, $FF404040, $FFFFFFFF, $FF808080));
+      ColorRect($FF000000, $FF404040, $FFFFFFFF, $FF808080));
 
     // Draw some text.
-    FDisplay.Fonts[FFontTahoma].DrawText(Point2(0.0, 1.0),
-      'Tahoma 8 font.', IntColorWhite2);
+    FDisplay.Fonts[FFontTahoma].DrawText(Point2f(0.0, 1.0),
+      'Tahoma 8 font.', ColorPairWhite);
 
-    FDisplay.Fonts[FFontSystem].DrawText(Point2(0.0, 20.0),
-      'System Font.', IntColorWhite2);
+    FDisplay.Fonts[FFontSystem].DrawText(Point2f(0.0, 20.0),
+      'System Font.', ColorPairWhite);
 
     // Send picture to the display.
     FDisplay.Present;

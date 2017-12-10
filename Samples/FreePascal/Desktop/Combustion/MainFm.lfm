@@ -8,5 +8,5 @@ object MainForm: TMainForm
   OnDestroy = FormDestroy
   OnResize = FormResize
   Position = poScreenCenter
-  LCLVersion = '1.5'
+  LCLVersion = '1.9.0.0'
 end

@@ -1,16 +1,16 @@
 unit PXL.Palettes;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 interface
 
 {$INCLUDE PXL.Config.inc}
@@ -323,7 +323,7 @@ begin
       Kappa := Sin(Kappa * PiHalf);
   end;
 
-  Result := LerpColors(First.Color, Next.Color, Kappa);
+  Result := First.Color.Lerp(Next.Color, Kappa);
 end;
 
 procedure TFloatPalette.LoadFromFile(const FileName: StdString);
@@ -615,9 +615,9 @@ end;
 
 function TFloatPalettes.GetColor(const Theta, Time: VectorFloat): TFloatColor;
 var
-  First, Second, Left, Right: TFloatPalette;
+  First, Second: TFloatPalette;
   Alpha: VectorFloat;
-  Color1, Color2, Color3, Color4: TFloatColor;
+  FirstColor, SecondColor: TFloatColor;
 begin
   // no palettes
   if Length(FData) < 1 then
@@ -639,26 +639,15 @@ begin
   if (Second.Time = First.Time) or (Second.Time = Time) or (Second = First) then
     Exit(Second.Color[Theta]);
 
-  // Retrieve another two palettes for cubic interpolation
-  Left := GetPrevPal(First.Time);
-  Right := GetSuccPal(Second.Time);
-
   // calculate interpolation value
   Alpha := (Time - First.Time) / (Second.Time - First.Time);
 
   // Retrieve all four colors
-  Color1 := Left.Color[Theta];
-  Color2 := First.Color[Theta];
-  Color3 := Second.Color[Theta];
-  Color4 := Right.Color[Theta];
+  FirstColor := First.Color[Theta];
+  SecondColor := Second.Color[Theta];
 
   // interpolate the result
-  Result.Red := Round(CatmullRom(Color1.Red, Color2.Red, Color3.Red, Color4.Red, Alpha));
-  Result.Green := Round(CatmullRom(Color1.Green, Color2.Green, Color3.Green, Color4.Green, Alpha));
-  Result.Blue := Round(CatmullRom(Color1.Blue, Color2.Blue, Color3.Blue, Color4.Blue, Alpha));
-  Result.Alpha := Round(CatmullRom(Color1.Alpha, Color2.Alpha, Color3.Alpha, Color4.Alpha, Alpha));
-
-  Result := WarpColor(Result);
+  Result := FirstColor.Lerp(SecondColor, Alpha).Saturate;
 end;
 
 procedure TFloatPalettes.SaveToStream(const Stream: TStream);

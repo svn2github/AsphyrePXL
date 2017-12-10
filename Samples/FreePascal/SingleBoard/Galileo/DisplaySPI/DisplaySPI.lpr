@@ -1,16 +1,16 @@
 program DisplaySPI;
-{
-  This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
-  Copyright (c) 2000 - 2016  Yuriy Kotsarenko
-
-  The contents of this file are subject to the Mozilla Public License Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.mozilla.org/MPL/
-
-  Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
-  KIND, either express or implied. See the License for the specific language governing rights and
-  limitations under the License.
-}
+(*
+ * This file is part of Asphyre Framework, also known as Platform eXtended Library (PXL).
+ * Copyright (c) 2015 - 2017 Yuriy Kotsarenko. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ *)
 {
   This example illustrates usage of SPI protocol and real-time drawing on color OLED display with ILI9340 driver.
 
@@ -40,7 +40,7 @@ type
     FDataPort: TCustomDataPort;
     FDisplay: TCustomDisplay;
 
-    FDisplaySize: TPoint2px;
+    FDisplaySize: TPoint2i;
 
     FFontKristen: Integer;
     FImageLenna: Integer;
@@ -107,49 +107,49 @@ begin
     for J := 0 to FDisplaySize.Y div 32 do
       for I := 0 to FDisplaySize.X div 32 do
         FDisplay.Canvas.FillQuad(
-          FloatRect4(I * 32, J * 32, 32, 32),
-          IntColor4($FF101010, $FF303030, $FF585858, $FF303030));
+          Quad(I * 32, J * 32, 32, 32),
+          ColorRect($FF101010, $FF303030, $FF585858, $FF303030));
 
     // Draw an animated Arc.
     Omega := Ticks * 0.0274;
     Kappa := 1.25 * Pi + Sin(Ticks * 0.01854) * 0.5 * Pi;
 
     FDisplay.Canvas.FillArc(
-      Point2(FDisplaySize.X * 0.2, FDisplaySize.Y * 0.5),
-      Point2(36.0, 32.0),
+      Point2f(FDisplaySize.X * 0.2, FDisplaySize.Y * 0.5),
+      Point2f(36.0, 32.0),
       Omega, Omega + Kappa, 16,
-      IntColor4($FFA4E581, $FFFF9C00, $FF7728FF, $FFFFFFFF));
+      ColorRect($FFA4E581, $FFFF9C00, $FF7728FF, $FFFFFFFF));
 
     // Draw an animated Ribbon.
     Omega := Ticks * 0.02231;
     Kappa := 1.25 * Pi + Sin(Ticks * 0.024751) * 0.5 * Pi;
 
     FDisplay.Canvas.FillRibbon(
-      Point2(FDisplaySize.X * 0.8, FDisplaySize.Y * 0.5),
-      Point2(16.0, 18.0),
-      Point2(40.0, 34.0),
+      Point2f(FDisplaySize.X * 0.8, FDisplaySize.Y * 0.5),
+      Point2f(16.0, 18.0),
+      Point2f(40.0, 34.0),
       Omega, Omega + Kappa, 16,
-      IntColor4($FFFF244F, $FFACFF0D, $FF2B98FF, $FF7B42FF));
+      ColorRect($FFFF244F, $FFACFF0D, $FF2B98FF, $FF7B42FF));
 
     // Draw the image of famous Lenna.
     FDisplay.Canvas.UseImage(FDisplay.Images[FImageLenna]);
-    FDisplay.Canvas.TexQuad(FloatRect4RC(
-      Point2(FDisplaySize.X * 0.5, FDisplaySize.Y * 0.5),
-      Point2(128.0, 128.0),
+    FDisplay.Canvas.TexQuad(TQuad.Rotated(
+      Point2f(FDisplaySize.X * 0.5, FDisplaySize.Y * 0.5),
+      Point2f(128.0, 128.0),
       Ticks * 0.01),
       IntColorAlpha(128));
 
     // Draw some text.
     FDisplay.Fonts[FFontKristen].DrawTextAligned(
-      Point2(FDisplaySize.X * 0.5, 2.0),
+      Point2f(FDisplaySize.X * 0.5, 2.0),
       'Hello World.',
-      IntColor2($FFFFE000, $FFFF0000),
+      ColorPair($FFFFE000, $FFFF0000),
       TTextAlignment.Middle, TTextAlignment.Start);
 
     FDisplay.Fonts[FFontKristen].DrawText(
-      Point2(1.0, FDisplaySize.Y - 22.0),
+      Point2f(1.0, FDisplaySize.Y - 22.0),
       'Frame #: ' + IntToStr(Ticks),
-      IntColor2($FFD6F5FC, $FF3E0DDC));
+      ColorPair($FFD6F5FC, $FF3E0DDC));
 
     // Send picture to the display.
     FDisplay.Present;

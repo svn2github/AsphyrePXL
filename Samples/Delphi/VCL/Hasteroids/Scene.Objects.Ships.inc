@@ -1,5 +1,5 @@
 const
-  ShipCoords: array[0..31, 0..2] of TPoint2px = (
+  ShipCoords: array[0..31, 0..2] of TPoint2i = (
     ((X: 51; Y: 38), (X: 12; Y: 38), (X: 32; Y: 17)),
     ((X: 51; Y: 33), (X: 13; Y: 40), (X: 28; Y: 17)),
     ((X: 50; Y: 30), (X: 15; Y: 43), (X: 24; Y: 18)),
