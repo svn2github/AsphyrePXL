@@ -28,7 +28,7 @@ uses
   PXL.Surfaces.GDI,
 {$ENDIF}
 
-  PXL.Types, PXL.Devices, PXL.Surfaces, PXL.SwapChains, PXL.Types.SRT;
+  PXL.TypeDef, PXL.Types, PXL.Devices, PXL.Surfaces, PXL.SwapChains, PXL.Types.SRT;
 
 type
   TSRTDevice = class(TCustomSwapChainDevice)
@@ -97,6 +97,7 @@ begin
   FSurface.Free;
 {$ENDIF}
 
+  FContextWriter.Free;
   FContext.Free;
 end;
 

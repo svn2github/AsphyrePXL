@@ -16,7 +16,7 @@ interface
 {$INCLUDE PXL.Config.inc}
 
 uses
-  PXL.Types, PXL.Surfaces, PXL.Devices, PXL.Textures, PXL.Canvas;
+  PXL.TypeDef, PXL.Types, PXL.Surfaces, PXL.Devices, PXL.Textures, PXL.Canvas;
 
 type
   TSRTCanvas = class(TCustomCanvas)
