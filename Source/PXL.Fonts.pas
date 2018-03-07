@@ -2095,6 +2095,7 @@ begin
   end;
 
   FFonts[Result].Name := FontName;
+  FSearchListDirty := True;
 end;
 
 function TBitmapFonts.AddFromBinaryFile(const FileName: StdString; const PixelFormat: TPixelFormat): Integer;
@@ -2105,6 +2106,7 @@ begin
     Remove(Result);
     Exit(-1);
   end;
+  FSearchListDirty := True;
 end;
 
 function TBitmapFonts.AddFromBinaryAsset(const AssetName: StdString; const PixelFormat: TPixelFormat): Integer;
@@ -2115,6 +2117,7 @@ begin
     Remove(Result);
     Exit(-1);
   end;
+  FSearchListDirty := True;
 end;
 
 function TBitmapFonts.AddFromXMLStream(const ImageExtension: StdString; const ImageStream, XMLStream: TStream;
@@ -2128,6 +2131,7 @@ begin
   end;
 
   FFonts[Result].Name := FontName;
+  FSearchListDirty := True;
 end;
 
 function TBitmapFonts.AddFromXMLFile(const ImageFileName: StdString; const XMLFileName: StdString;
@@ -2139,6 +2143,7 @@ begin
     Remove(Result);
     Exit(-1);
   end;
+  FSearchListDirty := True;
 end;
 
 function TBitmapFonts.AddFromXMLAsset(const ImageAssetName: StdString;
@@ -2150,6 +2155,7 @@ begin
     Remove(Result);
     Exit(-1);
   end;
+  FSearchListDirty := True;
 end;
 
 {$IFDEF IncludeSystemFont}
@@ -2165,6 +2171,7 @@ begin
   end;
 
   FFonts[Result].Name := FontName;
+  FSearchListDirty := True;
 end;
 {$ENDIF}
 
